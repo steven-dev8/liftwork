@@ -4,7 +4,8 @@ CREATE TABLE routine_exercises (
     exercise_id BIGINT NOT NULL REFERENCES exercises (id) ON DELETE RESTRICT,
     position INTEGER NOT NULL CHECK (position > 0),
     target_sets INTEGER NOT NULL DEFAULT 3 CHECK (target_sets > 0),
-    target_reps VARCHAR(20) NOT NULL DEFAULT '',
+    target_reps_min INTEGER NOT NULL DEFAULT 1 CHECK (target_reps_min > 0),
+    target_reps_max INTEGER NOT NULL DEFAULT 1 CHECK (target_reps_max > 0),
     PRIMARY KEY (routine_id, exercise_id),
     UNIQUE (routine_id, position)
 );
