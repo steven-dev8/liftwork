@@ -7,7 +7,8 @@ CREATE TABLE routine_exercises (
     target_reps_min INTEGER NOT NULL DEFAULT 1 CHECK (target_reps_min > 0),
     target_reps_max INTEGER NOT NULL DEFAULT 1 CHECK (target_reps_max > 0),
     PRIMARY KEY (routine_id, exercise_id),
-    UNIQUE (routine_id, position)
+    UNIQUE (routine_id, position),
+    CHECK (target_reps_max >= target_reps_min)
 );
 
 -- +goose Down
