@@ -6,7 +6,8 @@ CREATE TABLE workout_sessions (
     finished_at TIMESTAMPTZ,
     notes TEXT NOT NULL DEFAULT '',
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    CHECK (finished_at IS NULL OR finished_at >= started_at)
+    CHECK (finished_at IS NULL OR finished_at >= started_at),
+    CHECK (routine_id IS NOT NULL OR finished_at IS NOT NULL)
 );
 
 -- +goose Down

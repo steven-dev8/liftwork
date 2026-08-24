@@ -1,7 +1,7 @@
 include .env
 export
 
-MIGRATIONS_DIR=./migrations
+MIGRATIONS_DIR=./db/migrations
 
 run:
 	go run ./cmd/api/main.go

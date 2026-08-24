@@ -1,18 +1,12 @@
 -- +goose Up
-CREATE TABLE water_goal (
+CREATE TABLE users (
     id BIGSERIAL PRIMARY KEY,
-
-    goal_amount_ml INTEGER NOT NULL
-        CHECK (goal_amount_ml > 0),
-
+    email VARCHAR(254) UNIQUE,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 -- +goose Down
-DROP TABLE IF EXISTS water_goal;
-
-
-
-
+DROP TABLE IF EXISTS users;
