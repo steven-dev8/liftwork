@@ -2,8 +2,8 @@
 CREATE TABLE water_logs (
     id BIGSERIAL PRIMARY KEY,
 
-    water_goal_id BIGINT NOT NULL
-        REFERENCES water_goal(id)
+    user_id BIGINT NOT NULL
+        REFERENCES users(id)
         ON DELETE CASCADE,
 
     amount_ml INTEGER NOT NULL
@@ -13,9 +13,6 @@ CREATE TABLE water_logs (
 
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-CREATE INDEX idx_water_logs_water_goal_id
-ON water_logs(water_goal_id);
-
 
 -- +goose Down
 DROP TABLE IF EXISTS water_logs;
