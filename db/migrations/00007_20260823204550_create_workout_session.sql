@@ -1,7 +1,9 @@
 -- +goose Up
 CREATE TABLE workout_sessions (
     id BIGSERIAL PRIMARY KEY,
-    routine_id BIGINT NOT NULL REFERENCES routines (id) ON DELETE RESTRICT,
+    routine_id BIGINT
+        REFERENCES routines(id)
+        ON DELETE SET NULL,
     started_at TIMESTAMPTZ NOT NULL,
     finished_at TIMESTAMPTZ,
     notes TEXT NOT NULL DEFAULT '',
