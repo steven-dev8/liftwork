@@ -23,8 +23,8 @@ func (u *UserRepository) Create(ctx context.Context, user domain.User) (domain.U
 	}
 
 	row, err := u.querier.CreateUser(ctx, db.CreateUserParams{
-		Email: email,
-		Username: user.Username,
+		Email:        email,
+		Username:     user.Username,
 		PasswordHash: user.PasswordHash,
 	})
 
