@@ -8,7 +8,11 @@ import (
 	"github.com/go-chi/cors"
 )
 
-func NewRouter(allowedOrigins []string) http.Handler {
+type Handlers struct {
+	User *handler.User
+}
+
+func NewRouter(allowedOrigins []string, handlers Handlers) http.Handler {
 	router := chi.NewRouter()
 	router.Use(cors.Handler(cors.Options{
 		AllowedOrigins: allowedOrigins,
@@ -18,6 +22,7 @@ func NewRouter(allowedOrigins []string) http.Handler {
 	}))
 
 	router.Get("/ping", handler.Ping)
+	router.Post("/users/create_user", handlers.User.Create)
 
 	return router
 }

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"liftwork/internal/api"
 	"liftwork/internal/config"
 	"liftwork/internal/database"
 	"log/slog"
@@ -37,9 +38,14 @@ func run(logger *slog.Logger) error {
 	}
 	defer pool.Close()
 
+	application := api.New(pool, logger)
+
 	server := &http.Server{
-		Addr:              cfg.HTTPAddr,
-		Handler:           httpapi.NewRouter(cfg.CORSAllowedOrigins),
+		Addr: cfg.HTTPAddr,
+		Handler: httpapi.NewRouter(
+			cfg.CORSAllowedOrigins,
+			application.Handlers,
+		),
 		ReadHeaderTimeout: cfg.HTTPReadHeaderTimeout,
 	}
 
