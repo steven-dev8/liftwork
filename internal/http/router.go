@@ -1,7 +1,10 @@
 package httpapi
 
 import (
+	"liftwork/internal/config"
 	"liftwork/internal/http/handler"
+	"liftwork/internal/http/middleware"
+	"log/slog"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -12,10 +15,17 @@ type Handlers struct {
 	User *handler.User
 }
 
-func NewRouter(allowedOrigins []string, handlers Handlers) http.Handler {
+func NewRouter(
+	logger *slog.Logger, 
+	cfg *config.Config,
+	handlers Handlers,
+	) http.Handler {
+
 	router := chi.NewRouter()
+	router.Use(middleware.Logging(logger))
+	router.Use(middleware.Recovery(logger))
 	router.Use(cors.Handler(cors.Options{
-		AllowedOrigins: allowedOrigins,
+		AllowedOrigins: cfg.CORSAllowedOrigins,
 		AllowedMethods: []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete, http.MethodOptions},
 		AllowedHeaders: []string{"Accept", "Authorization", "Content-Type"},
 		MaxAge:         300,
