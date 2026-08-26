@@ -38,12 +38,13 @@ func run(logger *slog.Logger) error {
 	}
 	defer pool.Close()
 
-	application := api.New(pool, logger)
+	application := api.New(pool, &cfg)
 
 	server := &http.Server{
 		Addr: cfg.HTTPAddr,
 		Handler: httpapi.NewRouter(
-			cfg.CORSAllowedOrigins,
+			logger,
+			&cfg,
 			application.Handlers,
 		),
 		ReadHeaderTimeout: cfg.HTTPReadHeaderTimeout,
