@@ -9,11 +9,21 @@ import (
 )
 
 type UserService struct {
-	user repository.UserRepository
+	user          repository.UserRepository
+	jwtSecret     string
+	acessTokenTTL time.Duration
 }
 
-func NewUserService(user repository.UserRepository) *UserService {
-	return &UserService{user: user}
+func NewUserService(
+	user repository.UserRepository,
+	jwtSecret string,
+	acessTokenTTL time.Duration,
+) *UserService {
+	return &UserService{
+		user:          user,
+		jwtSecret:     jwtSecret,
+		acessTokenTTL: acessTokenTTL,
+	}
 }
 
 type CreateUserInput struct {
@@ -23,8 +33,11 @@ type CreateUserInput struct {
 }
 
 type CreateUserOutput struct {
+	ID        int64
 	Username  string
 	CreatedAt time.Time
+	TokenJWT  string
+	Duration  time.Duration
 }
 
 func (s *UserService) Create(ctx context.Context, input CreateUserInput) (CreateUserOutput, error) {
@@ -52,8 +65,16 @@ func (s *UserService) Create(ctx context.Context, input CreateUserInput) (Create
 		return CreateUserOutput{}, err
 	}
 
+	tokenJWT, err := security.CreateToken(user.ID, s.jwtSecret, s.acessTokenTTL)
+	if err != nil {
+		return CreateUserOutput{}, err
+	}
+
 	return CreateUserOutput{
+		ID:        user.ID,
 		Username:  user.Username,
 		CreatedAt: user.CreatedAt,
+		TokenJWT:  tokenJWT,
+		Duration:  s.acessTokenTTL,
 	}, nil
 }

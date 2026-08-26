@@ -22,8 +22,12 @@ type createUserRequest struct {
 }
 
 type CreatedUserResponse struct {
-	Username  string    `json:"username"`
-	CreatedAt time.Time `json:"created_at"`
+	ID         int64     `json:"id"`
+	Username   string    `json:"username"`
+	CreatedAt  time.Time `json:"created_at"`
+	AccessToken string    `json:"access_token"`
+	TokenType  string    `json:"token_type"`
+	ExpiresIn  int64     `json:"expires_in"`
 }
 
 func (h *User) Create(w http.ResponseWriter, r *http.Request) {
@@ -47,7 +51,11 @@ func (h *User) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusCreated, CreatedUserResponse{
-		Username:  user.Username,
-		CreatedAt: user.CreatedAt,
+		ID:         user.ID,
+		Username:   user.Username,
+		CreatedAt:  user.CreatedAt,
+		AccessToken: user.TokenJWT,
+		TokenType:  "Bearer",
+		ExpiresIn:  int64(user.Duration.Seconds()),
 	})
 }
