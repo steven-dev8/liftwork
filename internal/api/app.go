@@ -14,8 +14,10 @@ type App struct {
 }
 
 func New(dbtx db.DBTX, cfg *config.Config) *App {
+	sessionRepo := postgres.NewSessionRepository(dbtx)
+
 	userRepo := postgres.NewUserRepository(dbtx)
-	userService := service.NewUserService(userRepo, cfg.JWTSecretKey, cfg.JWTTTL)
+	userService := service.NewUserService(userRepo, sessionRepo, cfg.JWTSecretKey, cfg.JWTTTL, cfg.RefreshTokenTTL)
 	userHandler := handler.NewUser(userService)
 
 	return &App{
