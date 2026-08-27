@@ -33,6 +33,7 @@ func NewRouter(
 
 	router.Get("/ping", handler.Ping)
 	router.Post("/users/create_user", handlers.User.Create)
+	router.Post("/auth/login", handlers.User.Login)
 
 	return router
 }
