@@ -10,11 +10,12 @@ import (
 )
 
 const (
-	defaultHTTPAddr       = ":8080"
-	defaultReadHeader     = 5 * time.Second
-	defaultConnectTimeout = 5 * time.Second
-	defaultShutdown       = 10 * time.Second
-	defaultJWTTTL         = 15 * time.Minute
+	defaultHTTPAddr        = ":8080"
+	defaultReadHeader      = 5 * time.Second
+	defaultConnectTimeout  = 5 * time.Second
+	defaultShutdown        = 10 * time.Second
+	defaultJWTTTL          = 15 * time.Minute
+	defaultRefreshTokenTTL = 30 * 24 * time.Hour
 )
 
 // Config contains all runtime settings needed by the API
@@ -23,6 +24,7 @@ type Config struct {
 	HTTPReadHeaderTimeout time.Duration
 	JWTSecretKey          string
 	JWTTTL                time.Duration
+	RefreshTokenTTL       time.Duration
 	DatabaseURL           string
 	CORSAllowedOrigins    []string
 	DBMaxConns            int32
@@ -63,11 +65,17 @@ func Load() (Config, error) {
 		return Config{}, err
 	}
 
+	refreshTokenTTL, err := durationFromEnv("REFRESH_TOKEN_TTL", defaultRefreshTokenTTL)
+	if err != nil {
+		return Config{}, err
+	}
+
 	cfg := Config{
 		HTTPAddr:              valueOrDefault("HTTP_ADDR", defaultHTTPAddr),
 		HTTPReadHeaderTimeout: readHeaderTimeout,
 		JWTSecretKey:          strings.TrimSpace(os.Getenv("JWT_SECRET")),
 		JWTTTL:                jwtTTL,
+		RefreshTokenTTL:       refreshTokenTTL,
 		DatabaseURL:           strings.TrimSpace(os.Getenv("DATABASE_URL")),
 		CORSAllowedOrigins:    commaSeparatedEnv("CORS_ALLOWED_ORIGINS", []string{"http://localhost:5173"}),
 		DBMaxConns:            maxConns,
@@ -84,6 +92,9 @@ func Load() (Config, error) {
 	}
 	if cfg.JWTTTL <= 0 {
 		return Config{}, errors.New("JWT_ACCESS_TOKEN_TTL must be greater than zero")
+	}
+	if cfg.RefreshTokenTTL <= 0 {
+		return Config{}, errors.New("REFRESH_TOKEN_TTL must be greater than zero")
 	}
 	if cfg.DBMaxConns < 1 {
 		return Config{}, errors.New("DB_MAX_CONNS must be at least 1")

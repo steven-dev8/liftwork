@@ -11,6 +11,44 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const createSession = `-- name: CreateSession :one
+INSERT INTO sessions (
+    user_id,
+    refresh_token_hash,
+    expires_at
+) VALUES (
+    $1,
+    $2,
+    $3
+)
+RETURNING user_id, refresh_token_hash, created_at, expires_at
+`
+
+type CreateSessionParams struct {
+	UserID           int64              `json:"user_id"`
+	RefreshTokenHash string             `json:"refresh_token_hash"`
+	ExpiresAt        pgtype.Timestamptz `json:"expires_at"`
+}
+
+type CreateSessionRow struct {
+	UserID           int64              `json:"user_id"`
+	RefreshTokenHash string             `json:"refresh_token_hash"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	ExpiresAt        pgtype.Timestamptz `json:"expires_at"`
+}
+
+func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (CreateSessionRow, error) {
+	row := q.db.QueryRow(ctx, createSession, arg.UserID, arg.RefreshTokenHash, arg.ExpiresAt)
+	var i CreateSessionRow
+	err := row.Scan(
+		&i.UserID,
+		&i.RefreshTokenHash,
+		&i.CreatedAt,
+		&i.ExpiresAt,
+	)
+	return i, err
+}
+
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (
     email,
