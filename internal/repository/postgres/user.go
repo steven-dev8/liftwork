@@ -38,3 +38,17 @@ func (u *UserRepository) Create(ctx context.Context, user domain.User) (domain.U
 
 	return user, nil
 }
+
+
+func (u *UserRepository) FindByUsername(ctx context.Context, username string) (domain.User, error) {
+	row, err := u.querier.GetUser(ctx, username)
+	if err != nil {
+		return domain.User{}, err
+	}
+
+	return domain.User{
+		ID: row.ID,
+		Username: row.Username,
+		PasswordHash: row.PasswordHash,
+	}, nil
+}
