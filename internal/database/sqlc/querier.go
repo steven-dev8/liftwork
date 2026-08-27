@@ -9,6 +9,7 @@ import (
 )
 
 type Querier interface {
+	CreateSession(ctx context.Context, arg CreateSessionParams) (CreateSessionRow, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error)
 }
 
