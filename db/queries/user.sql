@@ -23,3 +23,9 @@ INSERT INTO sessions (
     @expires_at
 )
 RETURNING user_id, refresh_token_hash, created_at, expires_at;
+
+
+-- name: GetUser :one
+SELECT id, username, password_hash
+FROM users
+WHERE username = @username;
