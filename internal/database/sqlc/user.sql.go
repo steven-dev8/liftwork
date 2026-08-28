@@ -100,3 +100,18 @@ func (q *Queries) GetUser(ctx context.Context, username string) (GetUserRow, err
 	err := row.Scan(&i.ID, &i.Username, &i.PasswordHash)
 	return i, err
 }
+
+const revokeSession = `-- name: RevokeSession :execrows
+UPDATE sessions
+SET revoked_at = now()
+WHERE refresh_token_hash = $1
+    AND revoked_at IS NULL
+`
+
+func (q *Queries) RevokeSession(ctx context.Context, refreshTokenHash string) (int64, error) {
+	result, err := q.db.Exec(ctx, revokeSession, refreshTokenHash)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}

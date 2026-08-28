@@ -173,3 +173,14 @@ func (s *UserService) Login(ctx context.Context, input LoginUserInput) (LoginUse
 		RefreshExpiresAt: session.ExpiresAt,
 	}, nil
 }
+
+func (s *UserService) Logout(ctx context.Context, refreshToken string) error {
+	refreshTokenHash := security.HashRefreshToken(refreshToken)
+
+	_, err := s.session.RevokeSession(ctx, refreshTokenHash)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

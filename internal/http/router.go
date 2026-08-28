@@ -16,10 +16,10 @@ type Handlers struct {
 }
 
 func NewRouter(
-	logger *slog.Logger, 
+	logger *slog.Logger,
 	cfg *config.Config,
 	handlers Handlers,
-	) http.Handler {
+) http.Handler {
 
 	router := chi.NewRouter()
 	router.Use(middleware.Logging(logger))
@@ -32,8 +32,12 @@ func NewRouter(
 	}))
 
 	router.Get("/ping", handler.Ping)
+
 	router.Post("/users/create_user", handlers.User.Create)
+
+	// Auth
 	router.Post("/auth/login", handlers.User.Login)
+	router.Post("/auth/logout", handlers.User.Logout)
 
 	return router
 }

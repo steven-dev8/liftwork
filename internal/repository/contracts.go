@@ -21,4 +21,5 @@ type UserRepository interface {
 
 type SessionRepository interface {
 	Create(ctx context.Context, params CreateSessionParams) (CreateSessionOutput, error)
+	RevokeSession(ctx context.Context, refreshTokenHash string) (bool, error)
 }
