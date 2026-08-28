@@ -36,3 +36,12 @@ func (s *SessionRepository) Create(ctx context.Context, params repository.Create
 		ExpiresAt: row.ExpiresAt.Time,
 	}, nil
 }
+
+func (s *SessionRepository) RevokeSession(ctx context.Context, refreshTokenHash string) (bool, error) {
+	row, err := s.querier.RevokeSession(ctx, refreshTokenHash)
+	if err != nil {
+		return false, fmt.Errorf("revoke session: %w", err)
+	}
+
+	return row > 0, nil
+}

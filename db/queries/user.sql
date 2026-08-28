@@ -29,3 +29,9 @@ RETURNING user_id, refresh_token_hash, created_at, expires_at;
 SELECT id, username, password_hash
 FROM users
 WHERE username = @username;
+
+-- name: RevokeSession :execrows
+UPDATE sessions
+SET revoked_at = now()
+WHERE refresh_token_hash = @refresh_token_hash
+    AND revoked_at IS NULL;
