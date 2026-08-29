@@ -11,27 +11,7 @@ VALUES (
 )
 RETURNING id, username, created_at;
 
-
--- name: CreateSession :one
-INSERT INTO sessions (
-    user_id,
-    refresh_token_hash,
-    expires_at
-) VALUES (
-    @user_id,
-    @refresh_token_hash,
-    @expires_at
-)
-RETURNING user_id, refresh_token_hash, created_at, expires_at;
-
-
 -- name: GetUser :one
 SELECT id, username, password_hash
 FROM users
 WHERE username = @username;
-
--- name: RevokeSession :execrows
-UPDATE sessions
-SET revoked_at = now()
-WHERE refresh_token_hash = @refresh_token_hash
-    AND revoked_at IS NULL;

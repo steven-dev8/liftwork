@@ -11,8 +11,10 @@ import (
 type Querier interface {
 	CreateSession(ctx context.Context, arg CreateSessionParams) (CreateSessionRow, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error)
+	GetSessionByRefreshTokenHash(ctx context.Context, refreshTokenHash string) (GetSessionByRefreshTokenHashRow, error)
 	GetUser(ctx context.Context, username string) (GetUserRow, error)
 	RevokeSession(ctx context.Context, refreshTokenHash string) (int64, error)
+	RotateRefreshToken(ctx context.Context, arg RotateRefreshTokenParams) (int64, error)
 }
 
 var _ Querier = (*Queries)(nil)

@@ -11,44 +11,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const createSession = `-- name: CreateSession :one
-INSERT INTO sessions (
-    user_id,
-    refresh_token_hash,
-    expires_at
-) VALUES (
-    $1,
-    $2,
-    $3
-)
-RETURNING user_id, refresh_token_hash, created_at, expires_at
-`
-
-type CreateSessionParams struct {
-	UserID           int64              `json:"user_id"`
-	RefreshTokenHash string             `json:"refresh_token_hash"`
-	ExpiresAt        pgtype.Timestamptz `json:"expires_at"`
-}
-
-type CreateSessionRow struct {
-	UserID           int64              `json:"user_id"`
-	RefreshTokenHash string             `json:"refresh_token_hash"`
-	CreatedAt        pgtype.Timestamptz `json:"created_at"`
-	ExpiresAt        pgtype.Timestamptz `json:"expires_at"`
-}
-
-func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (CreateSessionRow, error) {
-	row := q.db.QueryRow(ctx, createSession, arg.UserID, arg.RefreshTokenHash, arg.ExpiresAt)
-	var i CreateSessionRow
-	err := row.Scan(
-		&i.UserID,
-		&i.RefreshTokenHash,
-		&i.CreatedAt,
-		&i.ExpiresAt,
-	)
-	return i, err
-}
-
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (
     email,
@@ -99,19 +61,4 @@ func (q *Queries) GetUser(ctx context.Context, username string) (GetUserRow, err
 	var i GetUserRow
 	err := row.Scan(&i.ID, &i.Username, &i.PasswordHash)
 	return i, err
-}
-
-const revokeSession = `-- name: RevokeSession :execrows
-UPDATE sessions
-SET revoked_at = now()
-WHERE refresh_token_hash = $1
-    AND revoked_at IS NULL
-`
-
-func (q *Queries) RevokeSession(ctx context.Context, refreshTokenHash string) (int64, error) {
-	result, err := q.db.Exec(ctx, revokeSession, refreshTokenHash)
-	if err != nil {
-		return 0, err
-	}
-	return result.RowsAffected(), nil
 }

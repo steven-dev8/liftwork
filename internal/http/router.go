@@ -12,7 +12,7 @@ import (
 )
 
 type Handlers struct {
-	User *handler.User
+	Auth *handler.Auth
 }
 
 func NewRouter(
@@ -33,11 +33,11 @@ func NewRouter(
 
 	router.Get("/ping", handler.Ping)
 
-	router.Post("/users/create_user", handlers.User.Create)
-
 	// Auth
-	router.Post("/auth/login", handlers.User.Login)
-	router.Post("/auth/logout", handlers.User.Logout)
+	router.Post("/auth/register", handlers.Auth.Register)
+	router.Post("/auth/login", handlers.Auth.Login)
+	router.Post("/auth/logout", handlers.Auth.Logout)
+	router.Post("/auth/refresh", handlers.Auth.Refresh)
 
 	return router
 }

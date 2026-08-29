@@ -2,14 +2,23 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"liftwork/internal/domain"
 	"time"
 )
+
+var ErrSessionNotFound = errors.New("session not found")
 
 type CreateSessionParams struct {
 	UserID           int64
 	RefreshTokenHash string
 	ExpiresAt        time.Time
+}
+
+type RotateRefreshTokenParams struct {
+	SessionID           int64
+	OldRefreshTokenHash string
+	NewRefreshTokenHash string
 }
 
 type CreateSessionOutput = CreateSessionParams
@@ -22,4 +31,6 @@ type UserRepository interface {
 type SessionRepository interface {
 	Create(ctx context.Context, params CreateSessionParams) (CreateSessionOutput, error)
 	RevokeSession(ctx context.Context, refreshTokenHash string) (bool, error)
+	FindByRefreshTokenHash(ctx context.Context, refreshTokenHash string) (domain.Session, error)
+	RotateRefreshToken(ctx context.Context, params RotateRefreshTokenParams) (bool, error)
 }
