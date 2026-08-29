@@ -2,27 +2,29 @@ package handler
 
 import (
 	"encoding/json"
-	"liftwork/internal/service"
+	"errors"
 	"net/http"
 	"strings"
 	"time"
+
+	"liftwork/internal/service"
 )
 
-type User struct {
-	service *service.UserService
+type Auth struct {
+	service *service.AuthService
 }
 
-func NewUser(userService *service.UserService) *User {
-	return &User{service: userService}
+func NewAuth(authService *service.AuthService) *Auth {
+	return &Auth{service: authService}
 }
 
-type createUserRequest struct {
+type registerUserRequest struct {
 	Username string `json:"username"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
 
-type createdUserResponse struct {
+type registeredUserResponse struct {
 	ID               int64     `json:"id"`
 	Username         string    `json:"username"`
 	CreatedAt        time.Time `json:"created_at"`
@@ -56,8 +58,20 @@ type loginUserResponse struct {
 	RefreshExpiresAt time.Time     `json:"refresh_expires_at"`
 }
 
-func (h *User) Create(w http.ResponseWriter, r *http.Request) {
-	var request createUserRequest
+type refreshTokenRequest struct {
+	RefreshToken string `json:"refresh_token"`
+}
+
+type refreshTokenResponse struct {
+	AccessToken      string    `json:"access_token"`
+	TokenType        string    `json:"token_type"`
+	ExpiresIn        int64     `json:"expires_in"`
+	RefreshToken     string    `json:"refresh_token"`
+	RefreshExpiresAt time.Time `json:"refresh_expires_at"`
+}
+
+func (h *Auth) Register(w http.ResponseWriter, r *http.Request) {
+	var request registerUserRequest
 	decoder := json.NewDecoder(r.Body)
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(&request); err != nil {
@@ -65,7 +79,7 @@ func (h *User) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.service.Create(r.Context(), service.CreateUserInput{
+	user, err := h.service.Register(r.Context(), service.RegisterUserInput{
 		Username: request.Username,
 		Email:    request.Email,
 		Password: request.Password,
@@ -76,7 +90,7 @@ func (h *User) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, createdUserResponse{
+	writeJSON(w, http.StatusCreated, registeredUserResponse{
 		ID:               user.ID,
 		Username:         user.Username,
 		CreatedAt:        user.CreatedAt,
@@ -88,10 +102,12 @@ func (h *User) Create(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *User) Login(w http.ResponseWriter, r *http.Request) {
+func (h *Auth) Login(w http.ResponseWriter, r *http.Request) {
 	var request loginUserRequest
+
 	decoder := json.NewDecoder(r.Body)
 	decoder.DisallowUnknownFields()
+
 	if err := decoder.Decode(&request); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON body"})
 		return
@@ -120,7 +136,7 @@ func (h *User) Login(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *User) Logout(w http.ResponseWriter, r *http.Request) {
+func (h *Auth) Logout(w http.ResponseWriter, r *http.Request) {
 	var request logoutUserRequest
 
 	decoder := json.NewDecoder(r.Body)
@@ -141,11 +157,60 @@ func (h *User) Logout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.service.Logout(r.Context(), request.RefreshToken); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{
-			"error": err.Error(),
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "internal server error",
 		})
 		return
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *Auth) Refresh(w http.ResponseWriter, r *http.Request) {
+	var request refreshTokenRequest
+
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+
+	if err := decoder.Decode(&request); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "invalid JSON body",
+		})
+		return
+	}
+
+	if strings.TrimSpace(request.RefreshToken) == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "refresh_token is required",
+		})
+		return
+	}
+
+	output, err := h.service.RefreshAccessToken(
+		r.Context(),
+		request.RefreshToken,
+	)
+	if err != nil {
+		switch {
+		case errors.Is(err, service.ErrInvalidRefreshToken):
+			writeJSON(w, http.StatusUnauthorized, map[string]string{
+				"error": "invalid refresh token",
+			})
+
+		default:
+			writeJSON(w, http.StatusInternalServerError, map[string]string{
+				"error": "internal server error",
+			})
+		}
+
+		return
+	}
+
+	writeJSON(w, http.StatusOK, refreshTokenResponse{
+		AccessToken:      output.AccessToken,
+		TokenType:        "Bearer",
+		ExpiresIn:        int64(output.AccessTokenTTL.Seconds()),
+		RefreshToken:     output.RefreshToken,
+		RefreshExpiresAt: output.RefreshExpiresAt,
+	})
 }

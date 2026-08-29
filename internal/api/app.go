@@ -15,14 +15,14 @@ type App struct {
 
 func New(dbtx db.DBTX, cfg *config.Config) *App {
 	sessionRepo := postgres.NewSessionRepository(dbtx)
-
 	userRepo := postgres.NewUserRepository(dbtx)
-	userService := service.NewUserService(userRepo, sessionRepo, cfg.JWTSecretKey, cfg.JWTTTL, cfg.RefreshTokenTTL)
-	userHandler := handler.NewUser(userService)
+
+	authService := service.NewAuthService(userRepo, sessionRepo, cfg.JWTSecretKey, cfg.JWTTTL, cfg.RefreshTokenTTL)
+	authHandler := handler.NewAuth(authService)
 
 	return &App{
 		Handlers: httpapi.Handlers{
-			User: userHandler,
+			Auth: authHandler,
 		},
 	}
 }

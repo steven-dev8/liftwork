@@ -3,14 +3,16 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
+	"strings"
+	"time"
+
 	"liftwork/internal/domain"
 	"liftwork/internal/repository"
 	"liftwork/internal/security"
-	"strings"
-	"time"
 )
 
-type UserService struct {
+type AuthService struct {
 	user            repository.UserRepository
 	session         repository.SessionRepository
 	jwtSecret       string
@@ -18,14 +20,14 @@ type UserService struct {
 	refreshTokenTTL time.Duration
 }
 
-func NewUserService(
+func NewAuthService(
 	user repository.UserRepository,
 	session repository.SessionRepository,
 	jwtSecret string,
 	accessTokenTTL time.Duration,
 	refreshTokenTTL time.Duration,
-) *UserService {
-	return &UserService{
+) *AuthService {
+	return &AuthService{
 		user:            user,
 		session:         session,
 		jwtSecret:       jwtSecret,
@@ -34,13 +36,13 @@ func NewUserService(
 	}
 }
 
-type CreateUserInput struct {
+type RegisterUserInput struct {
 	Username string
 	Email    string
 	Password string
 }
 
-type CreateUserOutput struct {
+type RegisterUserOutput struct {
 	ID               int64
 	Username         string
 	CreatedAt        time.Time
@@ -68,9 +70,16 @@ type LoginUserOutput struct {
 	RefreshExpiresAt time.Time
 }
 
-func (s *UserService) Create(ctx context.Context, input CreateUserInput) (CreateUserOutput, error) {
+type RefreshAccessTokenOutput struct {
+	AccessToken      string
+	AccessTokenTTL   time.Duration
+	RefreshToken     string
+	RefreshExpiresAt time.Time
+}
+
+func (s *AuthService) Register(ctx context.Context, input RegisterUserInput) (RegisterUserOutput, error) {
 	if err := domain.ValidatePassword(input.Password); err != nil {
-		return CreateUserOutput{}, err
+		return RegisterUserOutput{}, err
 	}
 
 	user, err := domain.NewUser(
@@ -78,24 +87,24 @@ func (s *UserService) Create(ctx context.Context, input CreateUserInput) (Create
 		input.Email,
 	)
 	if err != nil {
-		return CreateUserOutput{}, err
+		return RegisterUserOutput{}, err
 	}
 
 	passwordHash, err := security.HashPassword(input.Password)
 	if err != nil {
-		return CreateUserOutput{}, err
+		return RegisterUserOutput{}, err
 	}
 
 	user.PasswordHash = passwordHash
 
 	user, err = s.user.Create(ctx, user)
 	if err != nil {
-		return CreateUserOutput{}, err
+		return RegisterUserOutput{}, err
 	}
 
 	refreshToken, err := security.GenerateRefreshToken()
 	if err != nil {
-		return CreateUserOutput{}, err
+		return RegisterUserOutput{}, err
 	}
 
 	refreshTokenHash := security.HashRefreshToken(refreshToken)
@@ -106,15 +115,15 @@ func (s *UserService) Create(ctx context.Context, input CreateUserInput) (Create
 	})
 
 	if err != nil {
-		return CreateUserOutput{}, err
+		return RegisterUserOutput{}, err
 	}
 
 	accessToken, err := security.CreateToken(user.ID, s.jwtSecret, s.accessTokenTTL)
 	if err != nil {
-		return CreateUserOutput{}, err
+		return RegisterUserOutput{}, err
 	}
 
-	return CreateUserOutput{
+	return RegisterUserOutput{
 		ID:               user.ID,
 		Username:         user.Username,
 		CreatedAt:        user.CreatedAt,
@@ -125,7 +134,7 @@ func (s *UserService) Create(ctx context.Context, input CreateUserInput) (Create
 	}, nil
 }
 
-func (s *UserService) Login(ctx context.Context, input LoginUserInput) (LoginUserOutput, error) {
+func (s *AuthService) Login(ctx context.Context, input LoginUserInput) (LoginUserOutput, error) {
 	username := strings.ToLower(strings.TrimSpace(input.Username))
 	user, err := s.user.FindByUsername(ctx, username)
 	if err != nil {
@@ -174,7 +183,7 @@ func (s *UserService) Login(ctx context.Context, input LoginUserInput) (LoginUse
 	}, nil
 }
 
-func (s *UserService) Logout(ctx context.Context, refreshToken string) error {
+func (s *AuthService) Logout(ctx context.Context, refreshToken string) error {
 	refreshTokenHash := security.HashRefreshToken(refreshToken)
 
 	_, err := s.session.RevokeSession(ctx, refreshTokenHash)
@@ -183,4 +192,60 @@ func (s *UserService) Logout(ctx context.Context, refreshToken string) error {
 	}
 
 	return nil
+}
+
+func (s *AuthService) RefreshAccessToken(
+	ctx context.Context,
+	refreshToken string,
+) (RefreshAccessTokenOutput, error) {
+	refreshTokenHash := security.HashRefreshToken(refreshToken)
+
+	session, err := s.session.FindByRefreshTokenHash(ctx, refreshTokenHash)
+	if err != nil {
+		if errors.Is(err, repository.ErrSessionNotFound) {
+			return RefreshAccessTokenOutput{}, ErrInvalidRefreshToken
+		}
+
+		return RefreshAccessTokenOutput{}, fmt.Errorf("find refresh session: %w", err)
+	}
+
+	if !session.IsActive(time.Now().UTC()) {
+		return RefreshAccessTokenOutput{}, ErrInvalidRefreshToken
+	}
+
+	accessToken, err := security.CreateToken(
+		session.UserID,
+		s.jwtSecret,
+		s.accessTokenTTL,
+	)
+	if err != nil {
+		return RefreshAccessTokenOutput{}, err
+	}
+
+	newRefreshToken, err := security.GenerateRefreshToken()
+	if err != nil {
+		return RefreshAccessTokenOutput{}, err
+	}
+
+	newRefreshTokenHash := security.HashRefreshToken(newRefreshToken)
+
+	rotated, err := s.session.RotateRefreshToken(ctx, repository.RotateRefreshTokenParams{
+		SessionID:           session.ID,
+		OldRefreshTokenHash: refreshTokenHash,
+		NewRefreshTokenHash: newRefreshTokenHash,
+	})
+	if err != nil {
+		return RefreshAccessTokenOutput{}, err
+	}
+
+	if !rotated {
+		return RefreshAccessTokenOutput{}, ErrInvalidRefreshToken
+	}
+
+	return RefreshAccessTokenOutput{
+		AccessToken:      accessToken,
+		AccessTokenTTL:   s.accessTokenTTL,
+		RefreshToken:     newRefreshToken,
+		RefreshExpiresAt: session.ExpiresAt,
+	}, nil
 }
