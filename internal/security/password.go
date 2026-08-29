@@ -65,31 +65,31 @@ func HashPassword(password string) (string, error) {
 func ComparePassword(password, encodedHash string) (bool, error) {
 	parts := strings.Split(encodedHash, "$")
 	if len(parts) != 6 || parts[0] != "" || parts[1] != "argon2id" {
-		return false, fmt.Errorf("invalid password hash format")
+		return false, ErrInvalidPasswordHashFormat
 	}
 
 	var version int
 	if _, err := fmt.Sscanf(parts[2], "v=%d", &version); err != nil || version != argon2.Version {
-		return false, fmt.Errorf("invalid argon2 version")
+		return false, ErrInvalidArgonVersion
 	}
 
 	var memory, iterations uint32
 	var parallelism uint8
 	if _, err := fmt.Sscanf(parts[3], "m=%d,t=%d,p=%d", &memory, &iterations, &parallelism); err != nil {
-		return false, fmt.Errorf("invalid argon2 parameters: %w", err)
+		return false, fmt.Errorf("%w: %v", ErrInvalidArgonParams, err)
 	}
 	if memory == 0 || iterations == 0 || parallelism == 0 {
-		return false, fmt.Errorf("invalid argon2 parameters")
+		return false, ErrInvalidArgonParams
 	}
 
 	salt, err := base64.RawStdEncoding.DecodeString(parts[4])
 	if err != nil || len(salt) == 0 {
-		return false, fmt.Errorf("invalid password hash salt")
+		return false, ErrInvalidHashSalt
 	}
 
 	expectedHash, err := base64.RawStdEncoding.DecodeString(parts[5])
 	if err != nil || len(expectedHash) == 0 {
-		return false, fmt.Errorf("invalid password hash")
+		return false, ErrInvalidPasswordHash
 	}
 
 	actualHash := argon2.IDKey(

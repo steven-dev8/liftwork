@@ -99,7 +99,14 @@ func (s *AuthService) Register(ctx context.Context, input RegisterUserInput) (Re
 
 	user, err = s.user.Create(ctx, user)
 	if err != nil {
-		return RegisterUserOutput{}, err
+		switch {
+		case errors.Is(err, repository.ErrUsernameAlreadyExists):
+			return RegisterUserOutput{}, ErrUsernameAlreadyExists
+		case errors.Is(err, repository.ErrEmailAlreadyExists):
+			return RegisterUserOutput{}, ErrEmailAlreadyExists
+		default:
+			return RegisterUserOutput{}, fmt.Errorf("create user: %w", err)
+		}
 	}
 
 	refreshToken, err := security.GenerateRefreshToken()
@@ -138,7 +145,11 @@ func (s *AuthService) Login(ctx context.Context, input LoginUserInput) (LoginUse
 	username := strings.ToLower(strings.TrimSpace(input.Username))
 	user, err := s.user.FindByUsername(ctx, username)
 	if err != nil {
-		return LoginUserOutput{}, err
+		if errors.Is(err, repository.ErrUserNotFound) {
+			return LoginUserOutput{}, ErrInvalidCredentials
+		}
+
+		return LoginUserOutput{}, fmt.Errorf("find user by username: %w", err)
 	}
 
 	passwordEqual, err := security.ComparePassword(input.Password, user.PasswordHash)
@@ -147,7 +158,7 @@ func (s *AuthService) Login(ctx context.Context, input LoginUserInput) (LoginUse
 	}
 
 	if !passwordEqual {
-		return LoginUserOutput{}, errors.New("invalid username or password")
+		return LoginUserOutput{}, ErrInvalidCredentials
 	}
 
 	refreshToken, err := security.GenerateRefreshToken()

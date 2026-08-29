@@ -25,4 +25,3 @@ type LastExercisePerformance struct {
 	Found            bool
 }
 
-

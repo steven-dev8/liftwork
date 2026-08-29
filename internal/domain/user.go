@@ -1,7 +1,6 @@
 package domain
 
 import (
-	"errors"
 	"net/mail"
 	"regexp"
 	"strings"
@@ -41,7 +40,7 @@ func (u *User) validateEmail() error {
 
 	addr, err := mail.ParseAddress(u.Email)
 	if err != nil || addr.Address != u.Email {
-		return errors.New("invalid email")
+		return ErrInvalidEmail
 	}
 
 	return nil
@@ -54,15 +53,15 @@ func validateUsername(username string) error {
 	username = strings.ToLower(strings.TrimSpace(username))
 
 	if len(username) < 3 || len(username) > 15 {
-		return errors.New("username must have between 3 and 15 characters")
+		return ErrInvalidUsernameLength
 	}
 
 	if !usernameRegex.MatchString(username) {
-		return errors.New("username can only contain lowercase letters, numbers and underscores")
+		return ErrInvalidUsernameChars
 	}
 
 	if onlyNumbersRegex.MatchString(username) {
-		return errors.New("username cannot contain only numbers")
+		return ErrNumericUsername
 	}
 
 	return nil
@@ -70,7 +69,7 @@ func validateUsername(username string) error {
 
 func ValidatePassword(password string) error {
 	if utf8.RuneCountInString(password) < 10 {
-		return errors.New("password must have at least 10 characters")
+		return ErrPasswordTooShort
 	}
 
 	var hasNumber bool
@@ -78,7 +77,7 @@ func ValidatePassword(password string) error {
 
 	for _, char := range password {
 		if unicode.IsSpace(char) {
-			return errors.New("password must not contain spaces")
+			return ErrPasswordContainsSpace
 		}
 
 		if unicode.IsDigit(char) {
@@ -91,11 +90,11 @@ func ValidatePassword(password string) error {
 	}
 
 	if !hasNumber {
-		return errors.New("password must contain at least one number")
+		return ErrPasswordRequiresDigit
 	}
 
 	if !hasUpper {
-		return errors.New("password must contain at least one uppercase letter")
+		return ErrPasswordRequiresUpper
 	}
 
 	return nil

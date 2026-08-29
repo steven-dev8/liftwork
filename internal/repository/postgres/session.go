@@ -50,14 +50,23 @@ func (s *SessionRepository) RevokeSession(ctx context.Context, refreshTokenHash 
 	return row > 0, nil
 }
 
-func (s *SessionRepository) FindByRefreshTokenHash(ctx context.Context, refreshTokenHash string) (domain.Session, error) {
-	row, err := s.querier.GetSessionByRefreshTokenHash(ctx, refreshTokenHash)
+func (s *SessionRepository) FindByRefreshTokenHash(
+	ctx context.Context,
+	refreshTokenHash string,
+) (domain.Session, error) {
+	row, err := s.querier.GetSessionByRefreshTokenHash(
+		ctx,
+		refreshTokenHash,
+	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return domain.Session{}, repository.ErrSessionNotFound
 		}
 
-		return domain.Session{}, fmt.Errorf("get session: %w", err)
+		return domain.Session{}, fmt.Errorf(
+			"find session by refresh token hash: %w",
+			err,
+		)
 	}
 
 	session := domain.Session{
