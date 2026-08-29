@@ -2,7 +2,6 @@ package handler
 
 import (
 	"encoding/json"
-	"errors"
 	"net/http"
 	"strings"
 	"time"
@@ -75,7 +74,17 @@ func (h *Auth) Register(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(&request); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON body"})
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+
+	if strings.TrimSpace(request.Username) == "" {
+		writeError(w, http.StatusBadRequest, "username is required")
+		return
+	}
+
+	if strings.TrimSpace(request.Password) == "" {
+		writeError(w, http.StatusBadRequest, "password is required")
 		return
 	}
 
@@ -86,7 +95,7 @@ func (h *Auth) Register(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err != nil {
-		writeJSON(w, http.StatusUnprocessableEntity, map[string]string{"error": err.Error()})
+		writeServiceError(w, err)
 		return
 	}
 
@@ -109,7 +118,17 @@ func (h *Auth) Login(w http.ResponseWriter, r *http.Request) {
 	decoder.DisallowUnknownFields()
 
 	if err := decoder.Decode(&request); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON body"})
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+
+	if strings.TrimSpace(request.Username) == "" {
+		writeError(w, http.StatusBadRequest, "username is required")
+		return
+	}
+
+	if strings.TrimSpace(request.Password) == "" {
+		writeError(w, http.StatusBadRequest, "password is required")
 		return
 	}
 
@@ -119,7 +138,7 @@ func (h *Auth) Login(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err != nil {
-		writeJSON(w, http.StatusUnprocessableEntity, map[string]string{"error": err.Error()})
+		writeServiceError(w, err)
 		return
 	}
 
@@ -143,23 +162,17 @@ func (h *Auth) Logout(w http.ResponseWriter, r *http.Request) {
 	decoder.DisallowUnknownFields()
 
 	if err := decoder.Decode(&request); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{
-			"error": "invalid JSON body",
-		})
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
 		return
 	}
 
 	if strings.TrimSpace(request.RefreshToken) == "" {
-		writeJSON(w, http.StatusBadRequest, map[string]string{
-			"error": "refresh_token is required",
-		})
+		writeError(w, http.StatusBadRequest, "refresh_token is required")
 		return
 	}
 
 	if err := h.service.Logout(r.Context(), request.RefreshToken); err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{
-			"error": "internal server error",
-		})
+		writeServiceError(w, err)
 		return
 	}
 
@@ -173,16 +186,12 @@ func (h *Auth) Refresh(w http.ResponseWriter, r *http.Request) {
 	decoder.DisallowUnknownFields()
 
 	if err := decoder.Decode(&request); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{
-			"error": "invalid JSON body",
-		})
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
 		return
 	}
 
 	if strings.TrimSpace(request.RefreshToken) == "" {
-		writeJSON(w, http.StatusBadRequest, map[string]string{
-			"error": "refresh_token is required",
-		})
+		writeError(w, http.StatusBadRequest, "refresh_token is required")
 		return
 	}
 
@@ -191,18 +200,7 @@ func (h *Auth) Refresh(w http.ResponseWriter, r *http.Request) {
 		request.RefreshToken,
 	)
 	if err != nil {
-		switch {
-		case errors.Is(err, service.ErrInvalidRefreshToken):
-			writeJSON(w, http.StatusUnauthorized, map[string]string{
-				"error": "invalid refresh token",
-			})
-
-		default:
-			writeJSON(w, http.StatusInternalServerError, map[string]string{
-				"error": "internal server error",
-			})
-		}
-
+		writeServiceError(w, err)
 		return
 	}
 
