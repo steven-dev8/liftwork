@@ -1,10 +1,10 @@
-package service
+package repository
 
 import "errors"
 
 var (
-	ErrInvalidCredentials    = errors.New("invalid username or password")
-	ErrInvalidRefreshToken   = errors.New("invalid refresh token")
+	ErrUserNotFound          = errors.New("user not found")
+	ErrSessionNotFound       = errors.New("session not found")
 	ErrUsernameAlreadyExists = errors.New("username already exists")
 	ErrEmailAlreadyExists    = errors.New("email already exists")
 )

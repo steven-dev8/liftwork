@@ -1,21 +1,12 @@
 package security
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-)
-
-var (
-	ErrJWTSecretRequired = errors.New("JWT secret is required")
-	ErrInvalidTokenTTL   = errors.New("token TTL must be greater than zero")
-	ErrJWTRequired       = errors.New("JWT is required")
-	ErrInvalidJWT        = errors.New("invalid JWT")
-	ErrInvalidUserID     = errors.New("invalid user ID")
 )
 
 func CreateToken(userID int64, secret string, ttl time.Duration) (string, error) {

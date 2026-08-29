@@ -2,12 +2,9 @@ package repository
 
 import (
 	"context"
-	"errors"
 	"liftwork/internal/domain"
 	"time"
 )
-
-var ErrSessionNotFound = errors.New("session not found")
 
 type CreateSessionParams struct {
 	UserID           int64
