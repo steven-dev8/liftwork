@@ -17,12 +17,17 @@ func New(dbtx db.DBTX, cfg *config.Config) *App {
 	sessionRepo := postgres.NewSessionRepository(dbtx)
 	userRepo := postgres.NewUserRepository(dbtx)
 
+	exerciseRepo := postgres.NewExerciseRepository(dbtx)
+	exerciseService := service.NewExerciseService(exerciseRepo)
+	exerciseHandler := handler.NewExerciseHandler(exerciseService)
+
 	authService := service.NewAuthService(userRepo, sessionRepo, cfg.JWTSecretKey, cfg.JWTTTL, cfg.RefreshTokenTTL)
-	authHandler := handler.NewAuth(authService)
+	authHandler := handler.NewAuthHandler(authService)
 
 	return &App{
 		Handlers: httpapi.Handlers{
-			Auth: authHandler,
+			Auth:     authHandler,
+			Exercise: exerciseHandler,
 		},
 	}
 }
