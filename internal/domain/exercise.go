@@ -25,3 +25,14 @@ type LastExercisePerformance struct {
 	Found            bool
 }
 
+func (e Exercise) VerifyFields() error {
+	if e.Name == "" {
+		return ErrExerciseNameRequired
+	}
+
+	if e.MuscleGroup == "" {
+		return ErrExerciseMucleGroupRequired
+	}
+
+	return nil
+}

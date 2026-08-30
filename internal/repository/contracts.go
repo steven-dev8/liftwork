@@ -31,3 +31,7 @@ type SessionRepository interface {
 	FindByRefreshTokenHash(ctx context.Context, refreshTokenHash string) (domain.Session, error)
 	RotateRefreshToken(ctx context.Context, params RotateRefreshTokenParams) (bool, error)
 }
+
+type ExerciseRepository interface {
+	Create(ctx context.Context, userID int64, exercise domain.Exercise) (domain.Exercise, error)
+}

@@ -11,4 +11,7 @@ var (
 	ErrPasswordContainsSpace = errors.New("password must not contain spaces")
 	ErrPasswordRequiresDigit = errors.New("password must contain at least one number")
 	ErrPasswordRequiresUpper = errors.New("password must contain at least one uppercase letter")
+
+	ErrExerciseNameRequired       = errors.New("exercise name cannot be empty.")
+	ErrExerciseMucleGroupRequired = errors.New("muscle group name cannot be empty.")
 )

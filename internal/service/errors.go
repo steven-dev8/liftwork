@@ -7,4 +7,6 @@ var (
 	ErrInvalidRefreshToken   = errors.New("invalid refresh token")
 	ErrUsernameAlreadyExists = errors.New("username already exists")
 	ErrEmailAlreadyExists    = errors.New("email already exists")
+
+	ErrExerciseAlreadyExists = errors.New("exercise already exists")
 )
