@@ -7,4 +7,6 @@ var (
 	ErrSessionNotFound       = errors.New("session not found")
 	ErrUsernameAlreadyExists = errors.New("username already exists")
 	ErrEmailAlreadyExists    = errors.New("email already exists")
+
+	ErrExerciseAlreadyExists = errors.New("exercise already exists")
 )

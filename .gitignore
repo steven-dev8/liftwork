@@ -36,3 +36,5 @@ tmp/
 
 .DS_Store
 Thumbs.db
+
+/frontend

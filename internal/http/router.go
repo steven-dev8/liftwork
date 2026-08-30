@@ -12,7 +12,8 @@ import (
 )
 
 type Handlers struct {
-	Auth *handler.Auth
+	Auth     *handler.AuthHandler
+	Exercise *handler.ExerciseHandler
 }
 
 func NewRouter(
@@ -38,6 +39,12 @@ func NewRouter(
 	router.Post("/auth/login", handlers.Auth.Login)
 	router.Post("/auth/logout", handlers.Auth.Logout)
 	router.Post("/auth/refresh", handlers.Auth.Refresh)
+
+	router.Group(func(r chi.Router) {
+		r.Use(middleware.Auth(cfg.JWTSecretKey))
+
+		r.Post("/exercise", handlers.Exercise.Create)
+	})
 
 	return router
 }

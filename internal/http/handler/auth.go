@@ -9,12 +9,12 @@ import (
 	"liftwork/internal/service"
 )
 
-type Auth struct {
+type AuthHandler struct {
 	service *service.AuthService
 }
 
-func NewAuth(authService *service.AuthService) *Auth {
-	return &Auth{service: authService}
+func NewAuthHandler(authService *service.AuthService) *AuthHandler {
+	return &AuthHandler{service: authService}
 }
 
 type registerUserRequest struct {
@@ -69,10 +69,12 @@ type refreshTokenResponse struct {
 	RefreshExpiresAt time.Time `json:"refresh_expires_at"`
 }
 
-func (h *Auth) Register(w http.ResponseWriter, r *http.Request) {
+func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var request registerUserRequest
+
 	decoder := json.NewDecoder(r.Body)
 	decoder.DisallowUnknownFields()
+
 	if err := decoder.Decode(&request); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid JSON body")
 		return
@@ -111,7 +113,7 @@ func (h *Auth) Register(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *Auth) Login(w http.ResponseWriter, r *http.Request) {
+func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var request loginUserRequest
 
 	decoder := json.NewDecoder(r.Body)
@@ -155,7 +157,7 @@ func (h *Auth) Login(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *Auth) Logout(w http.ResponseWriter, r *http.Request) {
+func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	var request logoutUserRequest
 
 	decoder := json.NewDecoder(r.Body)
@@ -179,7 +181,7 @@ func (h *Auth) Logout(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (h *Auth) Refresh(w http.ResponseWriter, r *http.Request) {
+func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 	var request refreshTokenRequest
 
 	decoder := json.NewDecoder(r.Body)

@@ -9,6 +9,7 @@ import (
 )
 
 type Querier interface {
+	CreateExercise(ctx context.Context, arg CreateExerciseParams) (Exercise, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) (CreateSessionRow, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error)
 	GetSessionByRefreshTokenHash(ctx context.Context, refreshTokenHash string) (GetSessionByRefreshTokenHashRow, error)

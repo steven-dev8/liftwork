@@ -19,21 +19,55 @@ func writeError(w http.ResponseWriter, status int, message string) {
 func writeServiceError(w http.ResponseWriter, err error) {
 	switch {
 	case errors.Is(err, service.ErrInvalidCredentials):
-		writeError(w, http.StatusUnauthorized, service.ErrInvalidCredentials.Error())
+		writeError(
+			w,
+			http.StatusUnauthorized,
+			service.ErrInvalidCredentials.Error(),
+		)
+
 	case errors.Is(err, service.ErrInvalidRefreshToken):
-		writeError(w, http.StatusUnauthorized, service.ErrInvalidRefreshToken.Error())
+		writeError(
+			w,
+			http.StatusUnauthorized,
+			service.ErrInvalidRefreshToken.Error(),
+		)
+
 	case errors.Is(err, service.ErrUsernameAlreadyExists):
-		writeError(w, http.StatusConflict, service.ErrUsernameAlreadyExists.Error())
+		writeError(
+			w,
+			http.StatusConflict,
+			service.ErrUsernameAlreadyExists.Error(),
+		)
+
 	case errors.Is(err, service.ErrEmailAlreadyExists):
-		writeError(w, http.StatusConflict, service.ErrEmailAlreadyExists.Error())
+		writeError(
+			w,
+			http.StatusConflict,
+			service.ErrEmailAlreadyExists.Error(),
+		)
+
+	case errors.Is(err, service.ErrExerciseAlreadyExists):
+		writeError(
+			w,
+			http.StatusConflict,
+			service.ErrExerciseAlreadyExists.Error(),
+		)
+
 	default:
-		message, ok := domainValidationMessage(err)
-		if ok {
-			writeError(w, http.StatusUnprocessableEntity, message)
+		if message, ok := domainValidationMessage(err); ok {
+			writeError(
+				w,
+				http.StatusUnprocessableEntity,
+				message,
+			)
 			return
 		}
 
-		writeError(w, http.StatusInternalServerError, "internal server error")
+		writeError(
+			w,
+			http.StatusInternalServerError,
+			"internal server error",
+		)
 	}
 }
 
@@ -47,6 +81,9 @@ func domainValidationMessage(err error) (string, bool) {
 		domain.ErrPasswordContainsSpace,
 		domain.ErrPasswordRequiresDigit,
 		domain.ErrPasswordRequiresUpper,
+
+		domain.ErrExerciseNameRequired,
+		domain.ErrExerciseMucleGroupRequired,
 	}
 
 	for _, validationErr := range validationErrors {
