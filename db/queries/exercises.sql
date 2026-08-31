@@ -11,3 +11,8 @@ INSERT INTO exercises(
     @notes
 )
 RETURNING id, user_id, name, muscle_group, notes, created_at, updated_at;
+
+-- name: GetExercises :many
+SELECT id, name, muscle_group, notes, created_at, updated_at
+FROM exercises
+WHERE user_id = @user_id;

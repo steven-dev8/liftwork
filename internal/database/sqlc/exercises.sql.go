@@ -7,6 +7,8 @@ package db
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createExercise = `-- name: CreateExercise :one
@@ -49,4 +51,46 @@ func (q *Queries) CreateExercise(ctx context.Context, arg CreateExerciseParams) 
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const getExercises = `-- name: GetExercises :many
+SELECT id, name, muscle_group, notes, created_at, updated_at
+FROM exercises
+WHERE user_id = $1
+`
+
+type GetExercisesRow struct {
+	ID          int64              `json:"id"`
+	Name        string             `json:"name"`
+	MuscleGroup string             `json:"muscle_group"`
+	Notes       string             `json:"notes"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) GetExercises(ctx context.Context, userID *int64) ([]GetExercisesRow, error) {
+	rows, err := q.db.Query(ctx, getExercises, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetExercisesRow{}
+	for rows.Next() {
+		var i GetExercisesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.MuscleGroup,
+			&i.Notes,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
