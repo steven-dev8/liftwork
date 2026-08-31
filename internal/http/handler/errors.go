@@ -52,6 +52,24 @@ func writeServiceError(w http.ResponseWriter, err error) {
 			http.StatusConflict,
 			service.ErrExerciseAlreadyExists.Error(),
 		)
+	case errors.Is(err, service.ErrInvalidExerciseName):
+		writeError(
+			w,
+			http.StatusUnprocessableEntity,
+			service.ErrInvalidExerciseName.Error(),
+		)
+	case errors.Is(err, service.ErrInvalidExerciseMuscleGroup):
+		writeError(
+			w,
+			http.StatusUnprocessableEntity,
+			service.ErrInvalidExerciseMuscleGroup.Error(),
+		)
+	case errors.Is(err, service.ErrExerciseNotFound):
+	writeError(
+		w,
+		http.StatusNotFound,
+		service.ErrExerciseNotFound.Error(),
+	)
 
 	default:
 		if message, ok := domainValidationMessage(err); ok {

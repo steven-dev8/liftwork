@@ -5,7 +5,10 @@ import (
 	"liftwork/internal/http/middleware"
 	"liftwork/internal/service"
 	"net/http"
+	"strconv"
 	"time"
+
+	"github.com/go-chi/chi/v5"
 )
 
 type ExerciseHandler struct {
@@ -20,6 +23,12 @@ type createExerciseRequest struct {
 	Name        string `json:"name"`
 	MuscleGroup string `json:"muscle_group"`
 	Notes       string `json:"notes"`
+}
+
+type updateExerciseRequest struct {
+	Name        *string `json:"name"`
+	MuscleGroup *string `json:"muscle_group"`
+	Notes       *string `json:"notes"`
 }
 
 type ExerciseResponse struct {
@@ -101,4 +110,54 @@ func (h *ExerciseHandler) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, response)
+}
+
+func (h *ExerciseHandler) Update(w http.ResponseWriter, r *http.Request) {
+	idParam := chi.URLParam(r, "id")
+
+	exerciseID, err := strconv.ParseInt(idParam, 10, 64)
+	if err != nil || exerciseID <= 0 {
+		writeError(w, http.StatusBadRequest, "invalid exercise id")
+		return
+	}
+
+	userID, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{
+			"error": "unauthorized",
+		})
+		return
+	}
+
+	var request updateExerciseRequest
+
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+
+	if err := decoder.Decode(&request); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+
+	exercise, err := h.service.Update(r.Context(), service.UpdateExerciseInput{
+		ID:          exerciseID,
+		UserID:      userID,
+		Name:        request.Name,
+		MuscleGroup: request.MuscleGroup,
+		Notes:       request.Notes,
+	})
+
+	if err != nil {
+		writeServiceError(w, err)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, ExerciseResponse{
+		ID:          exercise.ID,
+		Name:        exercise.Name,
+		MuscleGroup: exercise.MuscleGroup,
+		Notes:       exercise.Notes,
+		CreatedAt:   exercise.CreatedAt,
+		UpdatedAt:   exercise.UpdatedAt,
+	})
 }
