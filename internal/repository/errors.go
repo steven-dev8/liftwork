@@ -9,4 +9,5 @@ var (
 	ErrEmailAlreadyExists    = errors.New("email already exists")
 
 	ErrExerciseAlreadyExists = errors.New("exercise already exists")
+	ErrExerciseNotFound      = errors.New("exercise not found")
 )

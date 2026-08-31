@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"liftwork/internal/domain"
 	"liftwork/internal/repository"
+	"strings"
 	"time"
 )
 
@@ -33,14 +34,22 @@ type ExerciseOutput struct {
 	UpdatedAt   time.Time
 }
 
+type UpdateExerciseInput struct {
+	ID          int64
+	UserID      int64
+	Name        *string
+	MuscleGroup *string
+	Notes       *string
+}
+
 func (s *ExerciseService) Create(
 	ctx context.Context,
 	input CreateExerciseInput,
 ) (ExerciseOutput, error) {
 	exercise := domain.Exercise{
-		Name:        input.Name,
-		MuscleGroup: input.MuscleGroup,
-		Notes:       input.Notes,
+		Name:        strings.TrimSpace(input.Name),
+		MuscleGroup: strings.TrimSpace(input.MuscleGroup),
+		Notes:       strings.TrimSpace(input.Notes),
 	}
 
 	if err := exercise.VerifyFields(); err != nil {
@@ -62,7 +71,7 @@ func (s *ExerciseService) Create(
 		MuscleGroup: exercise.MuscleGroup,
 		Notes:       exercise.Notes,
 		CreatedAt:   exercise.CreatedAt,
-		UpdatedAt:   exercise.UpdateAt,
+		UpdatedAt:   exercise.UpdatedAt,
 	}, nil
 }
 
@@ -81,9 +90,69 @@ func (s *ExerciseService) List(ctx context.Context, userID int64) ([]ExerciseOut
 			MuscleGroup: exercise.MuscleGroup,
 			Notes:       exercise.Notes,
 			CreatedAt:   exercise.CreatedAt,
-			UpdatedAt:   exercise.UpdateAt,
+			UpdatedAt:   exercise.UpdatedAt,
 		}
 	}
 
 	return listExercises, nil
+}
+
+func (s *ExerciseService) Update(
+	ctx context.Context,
+	input UpdateExerciseInput,
+) (ExerciseOutput, error) {
+	if input.Name == nil &&
+		input.MuscleGroup == nil &&
+		input.Notes == nil {
+		return ExerciseOutput{}, ErrEmptyExerciseUpdate
+	}
+
+	if input.Name != nil {
+		name := strings.TrimSpace(*input.Name)
+
+		if name == "" {
+			return ExerciseOutput{}, ErrInvalidExerciseName
+		}
+
+		input.Name = &name
+	}
+
+	if input.MuscleGroup != nil {
+		muscleGroup := strings.TrimSpace(*input.MuscleGroup)
+
+		if muscleGroup == "" {
+			return ExerciseOutput{}, ErrInvalidExerciseMuscleGroup
+		}
+
+		input.MuscleGroup = &muscleGroup
+	}
+
+	if input.Notes != nil {
+		notes := strings.TrimSpace(*input.Notes)
+		input.Notes = &notes
+	}
+
+	exercise, err := s.repository.Update(ctx, repository.ExerciseUpdateParams{
+		ID:          input.ID,
+		UserID:      input.UserID,
+		Name:        input.Name,
+		MuscleGroup: input.MuscleGroup,
+		Notes:       input.Notes,
+	})
+	if err != nil {
+		if errors.Is(err, repository.ErrExerciseNotFound) {
+			return ExerciseOutput{}, ErrExerciseNotFound
+		}
+
+		return ExerciseOutput{}, fmt.Errorf("update exercise: %w", err)
+	}
+
+	return ExerciseOutput{
+		ID:          exercise.ID,
+		Name:        exercise.Name,
+		MuscleGroup: exercise.MuscleGroup,
+		Notes:       exercise.Notes,
+		CreatedAt:   exercise.CreatedAt,
+		UpdatedAt:   exercise.UpdatedAt,
+	}, nil
 }

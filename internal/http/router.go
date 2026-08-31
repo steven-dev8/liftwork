@@ -45,6 +45,7 @@ func NewRouter(
 
 		r.Post("/exercises", handlers.Exercise.Create)
 		r.Get("/exercises", handlers.Exercise.List)
+		r.Patch("/exercises/{id}", handlers.Exercise.Update)
 	})
 
 	return router

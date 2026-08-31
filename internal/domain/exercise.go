@@ -9,7 +9,7 @@ type Exercise struct {
 	MuscleGroup string
 	Notes       string
 	CreatedAt   time.Time
-	UpdateAt    time.Time
+	UpdatedAt   time.Time
 }
 
 // LastExercisePerformance summarizes the most recent set performed for an exercise.
