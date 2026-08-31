@@ -10,11 +10,11 @@ import (
 )
 
 type ExerciseService struct {
-	exerciseRepo repository.ExerciseRepository
+	repository repository.ExerciseRepository
 }
 
 func NewExerciseService(exerciseRepo repository.ExerciseRepository) *ExerciseService {
-	return &ExerciseService{exerciseRepo: exerciseRepo}
+	return &ExerciseService{repository: exerciseRepo}
 }
 
 type CreateExerciseInput struct {
@@ -24,7 +24,7 @@ type CreateExerciseInput struct {
 	Notes       string
 }
 
-type CreateExerciseOutput struct {
+type ExerciseOutput struct {
 	ID          int64
 	Name        string
 	MuscleGroup string
@@ -36,7 +36,7 @@ type CreateExerciseOutput struct {
 func (s *ExerciseService) Create(
 	ctx context.Context,
 	input CreateExerciseInput,
-) (CreateExerciseOutput, error) {
+) (ExerciseOutput, error) {
 	exercise := domain.Exercise{
 		Name:        input.Name,
 		MuscleGroup: input.MuscleGroup,
@@ -44,19 +44,19 @@ func (s *ExerciseService) Create(
 	}
 
 	if err := exercise.VerifyFields(); err != nil {
-		return CreateExerciseOutput{}, err
+		return ExerciseOutput{}, err
 	}
 
-	exercise, err := s.exerciseRepo.Create(ctx, input.UserID, exercise)
+	exercise, err := s.repository.Create(ctx, input.UserID, exercise)
 	if err != nil {
 		if errors.Is(err, repository.ErrExerciseAlreadyExists) {
-			return CreateExerciseOutput{}, ErrExerciseAlreadyExists
+			return ExerciseOutput{}, ErrExerciseAlreadyExists
 		}
 
-		return CreateExerciseOutput{}, fmt.Errorf("create exercise: %w", err)
+		return ExerciseOutput{}, fmt.Errorf("create exercise: %w", err)
 	}
 
-	return CreateExerciseOutput{
+	return ExerciseOutput{
 		ID:          exercise.ID,
 		Name:        exercise.Name,
 		MuscleGroup: exercise.MuscleGroup,
@@ -64,4 +64,26 @@ func (s *ExerciseService) Create(
 		CreatedAt:   exercise.CreatedAt,
 		UpdatedAt:   exercise.UpdateAt,
 	}, nil
+}
+
+func (s *ExerciseService) List(ctx context.Context, userID int64) ([]ExerciseOutput, error) {
+	exercises, err := s.repository.List(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("list exercises: %w", err)
+	}
+
+	listExercises := make([]ExerciseOutput, len(exercises))
+
+	for index, exercise := range exercises {
+		listExercises[index] = ExerciseOutput{
+			ID:          exercise.ID,
+			Name:        exercise.Name,
+			MuscleGroup: exercise.MuscleGroup,
+			Notes:       exercise.Notes,
+			CreatedAt:   exercise.CreatedAt,
+			UpdatedAt:   exercise.UpdateAt,
+		}
+	}
+
+	return listExercises, nil
 }

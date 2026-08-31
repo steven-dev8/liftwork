@@ -22,7 +22,7 @@ type createExerciseRequest struct {
 	Notes       string `json:"notes"`
 }
 
-type createExerciseResponse struct {
+type ExerciseResponse struct {
 	ID          int64     `json:"id"`
 	Name        string    `json:"name"`
 	MuscleGroup string    `json:"muscle_group"`
@@ -62,7 +62,7 @@ func (h *ExerciseHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, createExerciseResponse{
+	writeJSON(w, http.StatusCreated, ExerciseResponse{
 		ID:          exercise.ID,
 		Name:        exercise.Name,
 		MuscleGroup: exercise.MuscleGroup,
@@ -70,4 +70,35 @@ func (h *ExerciseHandler) Create(w http.ResponseWriter, r *http.Request) {
 		CreatedAt:   exercise.CreatedAt,
 		UpdatedAt:   exercise.UpdatedAt,
 	})
+}
+
+func (h *ExerciseHandler) List(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{
+			"error": "unauthorized",
+		})
+		return
+	}
+
+	exercises, err := h.service.List(r.Context(), userID)
+	if err != nil {
+		writeServiceError(w, err)
+		return
+	}
+
+	response := make([]ExerciseResponse, len(exercises))
+
+	for i, exercise := range exercises {
+		response[i] = ExerciseResponse{
+			ID:          exercise.ID,
+			Name:        exercise.Name,
+			MuscleGroup: exercise.MuscleGroup,
+			Notes:       exercise.Notes,
+			CreatedAt:   exercise.CreatedAt,
+			UpdatedAt:   exercise.UpdatedAt,
+		}
+	}
+
+	writeJSON(w, http.StatusOK, response)
 }

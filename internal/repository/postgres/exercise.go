@@ -50,3 +50,29 @@ func (e *ExerciseRepository) Create(
 
 	return exercise, nil
 }
+
+func (e *ExerciseRepository) List(
+	ctx context.Context,
+	userID int64,
+) ([]domain.Exercise, error) {
+	rows, err := e.querier.GetExercises(ctx, &userID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	exercises := make([]domain.Exercise, len(rows))
+
+	for index, exercise := range rows {
+		exercises[index] = domain.Exercise{
+			ID:          exercise.ID,
+			Name:        exercise.Name,
+			MuscleGroup: exercise.MuscleGroup,
+			Notes:       exercise.Notes,
+			CreatedAt:   exercise.CreatedAt.Time,
+			UpdateAt:    exercise.UpdatedAt.Time,
+		}
+	}
+
+	return exercises, nil
+}

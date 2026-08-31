@@ -34,4 +34,5 @@ type SessionRepository interface {
 
 type ExerciseRepository interface {
 	Create(ctx context.Context, userID int64, exercise domain.Exercise) (domain.Exercise, error)
+	List(ctx context.Context, userID int64) ([]domain.Exercise, error)
 }
