@@ -94,3 +94,43 @@ func (q *Queries) GetExercises(ctx context.Context, userID *int64) ([]GetExercis
 	}
 	return items, nil
 }
+
+const updateExerciseById = `-- name: UpdateExerciseById :one
+UPDATE exercises
+SET
+    name = COALESCE($1, name),
+    muscle_group = COALESCE($2, muscle_group),
+    notes = COALESCE($3, notes),
+    updated_at = now()
+WHERE id = $4 AND user_id = $5
+RETURNING id, user_id, name, muscle_group, notes, created_at, updated_at
+`
+
+type UpdateExerciseByIdParams struct {
+	Name        *string `json:"name"`
+	MuscleGroup *string `json:"muscle_group"`
+	Notes       *string `json:"notes"`
+	ID          int64   `json:"id"`
+	UserID      *int64  `json:"user_id"`
+}
+
+func (q *Queries) UpdateExerciseById(ctx context.Context, arg UpdateExerciseByIdParams) (Exercise, error) {
+	row := q.db.QueryRow(ctx, updateExerciseById,
+		arg.Name,
+		arg.MuscleGroup,
+		arg.Notes,
+		arg.ID,
+		arg.UserID,
+	)
+	var i Exercise
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Name,
+		&i.MuscleGroup,
+		&i.Notes,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}

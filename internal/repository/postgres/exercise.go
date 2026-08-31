@@ -8,6 +8,7 @@ import (
 	"liftwork/internal/domain"
 	"liftwork/internal/repository"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
@@ -46,7 +47,7 @@ func (e *ExerciseRepository) Create(
 
 	exercise.ID = row.ID
 	exercise.CreatedAt = row.CreatedAt.Time
-	exercise.UpdateAt = row.UpdatedAt.Time
+	exercise.UpdatedAt = row.UpdatedAt.Time
 
 	return exercise, nil
 }
@@ -70,9 +71,39 @@ func (e *ExerciseRepository) List(
 			MuscleGroup: exercise.MuscleGroup,
 			Notes:       exercise.Notes,
 			CreatedAt:   exercise.CreatedAt.Time,
-			UpdateAt:    exercise.UpdatedAt.Time,
+			UpdatedAt:   exercise.UpdatedAt.Time,
 		}
 	}
 
 	return exercises, nil
+}
+
+func (e *ExerciseRepository) Update(
+	ctx context.Context,
+	exerciseInfo repository.ExerciseUpdateParams,
+) (domain.Exercise, error) {
+	exercise, err := e.querier.UpdateExerciseById(ctx, db.UpdateExerciseByIdParams{
+		ID:          exerciseInfo.ID,
+		UserID:      &exerciseInfo.UserID,
+		Name:        exerciseInfo.Name,
+		MuscleGroup: exerciseInfo.MuscleGroup,
+		Notes:       exerciseInfo.Notes,
+	})
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return domain.Exercise{}, repository.ErrExerciseNotFound
+		}
+
+		return domain.Exercise{}, fmt.Errorf("update exercise: %w", err)
+	}
+
+	return domain.Exercise{
+		ID:          exercise.ID,
+		Name:        exercise.Name,
+		MuscleGroup: exercise.MuscleGroup,
+		Notes:       exercise.Notes,
+		CreatedAt:   exercise.CreatedAt.Time,
+		UpdatedAt:   exercise.UpdatedAt.Time,
+	}, nil
 }

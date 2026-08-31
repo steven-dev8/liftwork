@@ -18,6 +18,14 @@ type RotateRefreshTokenParams struct {
 	NewRefreshTokenHash string
 }
 
+type ExerciseUpdateParams struct {
+	ID          int64
+	UserID      int64
+	Name        *string
+	MuscleGroup *string
+	Notes       *string
+}
+
 type CreateSessionOutput = CreateSessionParams
 
 type UserRepository interface {
@@ -35,4 +43,5 @@ type SessionRepository interface {
 type ExerciseRepository interface {
 	Create(ctx context.Context, userID int64, exercise domain.Exercise) (domain.Exercise, error)
 	List(ctx context.Context, userID int64) ([]domain.Exercise, error)
+	Update(ctx context.Context, exerciseInfo ExerciseUpdateParams) (domain.Exercise, error)
 }
