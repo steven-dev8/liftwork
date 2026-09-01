@@ -10,6 +10,7 @@ import (
 
 type Querier interface {
 	CreateExercise(ctx context.Context, arg CreateExerciseParams) (Exercise, error)
+	CreateRoutine(ctx context.Context, arg CreateRoutineParams) (Routine, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) (CreateSessionRow, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error)
 	DeleteExerciseByID(ctx context.Context, arg DeleteExerciseByIDParams) (int64, error)

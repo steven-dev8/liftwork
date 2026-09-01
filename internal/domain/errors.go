@@ -14,4 +14,7 @@ var (
 
 	ErrExerciseNameRequired       = errors.New("exercise name cannot be empty.")
 	ErrExerciseMucleGroupRequired = errors.New("muscle group name cannot be empty.")
+
+	ErrRoutineNameRequired = errors.New("routine name is required")
+	ErrInvalidRoutineCode  = errors.New("invalid routine code")
 )

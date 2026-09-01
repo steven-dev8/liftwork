@@ -46,3 +46,7 @@ type ExerciseRepository interface {
 	Update(ctx context.Context, exerciseInfo ExerciseUpdateParams) (domain.Exercise, error)
 	Delete(ctx context.Context, id int64, userID int64) error
 }
+
+type RoutineRepository interface {
+	Create(ctx context.Context, routine domain.Routine) (domain.Routine, error)
+}
