@@ -15,6 +15,10 @@ var (
 	ErrExerciseNameRequired       = errors.New("exercise name cannot be empty.")
 	ErrExerciseMucleGroupRequired = errors.New("muscle group name cannot be empty.")
 
-	ErrRoutineNameRequired = errors.New("routine name is required")
-	ErrInvalidRoutineCode  = errors.New("invalid routine code")
+	ErrRoutineNameRequired     = errors.New("routine name is required")
+	ErrInvalidRoutineCode      = errors.New("invalid routine code")
+	ErrInvalidExercisePosition = errors.New("exercise position must be greater than zero")
+	ErrInvalidTargetSets       = errors.New("target sets must be greater than zero")
+	ErrInvalidTargetRepsMin    = errors.New("target reps min must be greater than zero")
+	ErrInvalidTargetRepsRange  = errors.New("target reps max must be greater than or equal to target reps min")
 )

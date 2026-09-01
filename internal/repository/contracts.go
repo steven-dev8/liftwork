@@ -63,4 +63,5 @@ type ExerciseRepository interface {
 type RoutineRepository interface {
 	Create(ctx context.Context, routine domain.Routine) (domain.Routine, error)
 	List(ctx context.Context, userID int64) ([]RoutineWithExercises, error)
+	AddExerciseRoutine(ctx context.Context, userID int64, routineExercise domain.RoutineExercise) error
 }

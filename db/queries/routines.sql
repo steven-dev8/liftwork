@@ -17,10 +17,12 @@ VALUES (
 )
 RETURNING *;
 
+
 -- name: ListRoutine :many
 SELECT *
 FROM routines
 WHERE user_id = @user_id;
+
 
 -- name: GetExerciseRoutine :many
 SELECT
@@ -34,3 +36,30 @@ INNER JOIN exercises e
     ON e.id = re.exercise_id
 WHERE re.routine_id = @routine_id
 ORDER BY re.position;
+
+
+-- name: AddExerciseRoutine :execrows
+INSERT INTO routine_exercises (
+    routine_id,
+    exercise_id,
+    position,
+    target_sets,
+    target_reps_min,
+    target_reps_max
+)
+SELECT
+    r.id,
+    e.id,
+    @position,
+    @target_sets,
+    @target_reps_min,
+    @target_reps_max
+FROM routines r
+JOIN exercises e
+    ON e.id = @exercise_id
+WHERE r.id = @routine_id
+  AND r.user_id = @user_id
+  AND (
+      e.user_id = @user_id
+      OR e.user_id IS NULL
+  );

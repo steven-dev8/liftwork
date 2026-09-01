@@ -9,6 +9,59 @@ import (
 	"context"
 )
 
+const addExerciseRoutine = `-- name: AddExerciseRoutine :execrows
+INSERT INTO routine_exercises (
+    routine_id,
+    exercise_id,
+    position,
+    target_sets,
+    target_reps_min,
+    target_reps_max
+)
+SELECT
+    r.id,
+    e.id,
+    $1,
+    $2,
+    $3,
+    $4
+FROM routines r
+JOIN exercises e
+    ON e.id = $5
+WHERE r.id = $6
+  AND r.user_id = $7
+  AND (
+      e.user_id = $7
+      OR e.user_id IS NULL
+  )
+`
+
+type AddExerciseRoutineParams struct {
+	Position      int32 `json:"position"`
+	TargetSets    int32 `json:"target_sets"`
+	TargetRepsMin int32 `json:"target_reps_min"`
+	TargetRepsMax int32 `json:"target_reps_max"`
+	ExerciseID    int64 `json:"exercise_id"`
+	RoutineID     int64 `json:"routine_id"`
+	UserID        int64 `json:"user_id"`
+}
+
+func (q *Queries) AddExerciseRoutine(ctx context.Context, arg AddExerciseRoutineParams) (int64, error) {
+	result, err := q.db.Exec(ctx, addExerciseRoutine,
+		arg.Position,
+		arg.TargetSets,
+		arg.TargetRepsMin,
+		arg.TargetRepsMax,
+		arg.ExerciseID,
+		arg.RoutineID,
+		arg.UserID,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const createRoutine = `-- name: CreateRoutine :one
 INSERT INTO routines (
     user_id,

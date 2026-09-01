@@ -60,6 +60,40 @@ func NewRoutine(
 	}, nil
 }
 
+func NewRoutineExercise(
+	routineID int64,
+	exerciseID int64,
+	position int32,
+	targetSets int32,
+	targetRepsMin int32,
+	targetRepsMax int32,
+) (RoutineExercise, error) {
+	if position <= 0 {
+		return RoutineExercise{}, ErrInvalidExercisePosition
+	}
+
+	if targetSets <= 0 {
+		return RoutineExercise{}, ErrInvalidTargetSets
+	}
+
+	if targetRepsMin <= 0 {
+		return RoutineExercise{}, ErrInvalidTargetRepsMin
+	}
+
+	if targetRepsMax < targetRepsMin {
+		return RoutineExercise{}, ErrInvalidTargetRepsRange
+	}
+
+	return RoutineExercise{
+		RoutineID:     routineID,
+		ExerciseID:    exerciseID,
+		Position:      position,
+		TargetSets:    targetSets,
+		TargetRepsMin: targetRepsMin,
+		TargetRepsMax: targetRepsMax,
+	}, nil
+}
+
 func (c RoutineCode) IsValid() bool {
 	switch c {
 	case RoutineA, RoutineB, RoutineC, RoutineD, RoutineE:

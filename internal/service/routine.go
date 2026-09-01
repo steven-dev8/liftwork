@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"liftwork/internal/domain"
 	"liftwork/internal/repository"
@@ -34,6 +35,16 @@ type RoutineOutput struct {
 
 type ExerciseRoutine struct {
 	Name          string
+	Position      int32
+	TargetSets    int32
+	TargetRepsMin int32
+	TargetRepsMax int32
+}
+
+type AddExerciseRoutineInput struct {
+	UserID        int64
+	RoutineID     int64
+	ExerciseID    int64
 	Position      int32
 	TargetSets    int32
 	TargetRepsMin int32
@@ -99,6 +110,37 @@ func (r *RoutineService) List(
 	}
 
 	return output, nil
+}
+
+func (r *RoutineService) AddExerciseRoutine(
+	ctx context.Context,
+	input AddExerciseRoutineInput,
+) error {
+	routineExercise, err := domain.NewRoutineExercise(
+		input.RoutineID,
+		input.ExerciseID,
+		input.Position,
+		input.TargetSets,
+		input.TargetRepsMin,
+		input.TargetRepsMax,
+	)
+	if err != nil {
+		return err
+	}
+
+	if err := r.repository.AddExerciseRoutine(
+		ctx,
+		input.UserID,
+		routineExercise,
+	); err != nil {
+		if errors.Is(err, repository.ErrRoutineOrExerciseNotFound) {
+			return ErrRoutineOrExerciseNotFound
+		}
+
+		return fmt.Errorf("add exercise to routine: %w", err)
+	}
+
+	return nil
 }
 
 func routineToOutput(routine domain.Routine) RoutineOutput {

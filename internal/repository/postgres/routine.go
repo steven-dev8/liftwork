@@ -89,3 +89,28 @@ func (r *RoutineRepository) List(
 
 	return listRoutines, nil
 }
+
+func (r *RoutineRepository) AddExerciseRoutine(
+	ctx context.Context,
+	userID int64,
+	routineExercise domain.RoutineExercise,
+) error {
+	rows, err := r.querier.AddExerciseRoutine(ctx, db.AddExerciseRoutineParams{
+		UserID:        userID,
+		RoutineID:     routineExercise.RoutineID,
+		ExerciseID:    routineExercise.ExerciseID,
+		Position:      routineExercise.Position,
+		TargetSets:    routineExercise.TargetSets,
+		TargetRepsMin: routineExercise.TargetRepsMin,
+		TargetRepsMax: routineExercise.TargetRepsMax,
+	})
+	if err != nil {
+		return fmt.Errorf("add exercise to routine: %w", err)
+	}
+
+	if rows == 0 {
+		return repository.ErrRoutineOrExerciseNotFound
+	}
+
+	return nil
+}
