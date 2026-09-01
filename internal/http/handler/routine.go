@@ -5,7 +5,10 @@ import (
 	"liftwork/internal/http/middleware"
 	"liftwork/internal/service"
 	"net/http"
+	"strconv"
 	"time"
+
+	"github.com/go-chi/chi/v5"
 )
 
 type RoutineHandler struct {
@@ -20,6 +23,14 @@ type createRoutineRequest struct {
 	Name        string `json:"name"`
 	Code        string `json:"code"`
 	Description string `json:"description"`
+}
+
+type addExerciseRoutineRequest struct {
+	ExerciseID    int64 `json:"exercise_id"`
+	Position      int32 `json:"position"`
+	TargetSets    int32 `json:"target_sets"`
+	TargetRepsMin int32 `json:"target_reps_min"`
+	TargetRepsMax int32 `json:"target_reps_max"`
 }
 
 type routineResponse struct {
@@ -132,4 +143,47 @@ func (h *RoutineHandler) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, output)
+}
+
+func (h *RoutineHandler) AddExerciseRoutine(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{
+			"error": "unauthorized",
+		})
+		return
+	}
+
+	idParam := chi.URLParam(r, "id")
+
+	routineID, err := strconv.ParseInt(idParam, 10, 64)
+	if err != nil || routineID <= 0 {
+		writeError(w, http.StatusBadRequest, "invalid routine id")
+		return
+	}
+
+	var request addExerciseRoutineRequest
+
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+
+	if err := decoder.Decode(&request); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+
+	if err := h.service.AddExerciseRoutine(r.Context(), service.AddExerciseRoutineInput{
+		UserID:        userID,
+		ExerciseID:    request.ExerciseID,
+		RoutineID:     routineID,
+		Position:      request.Position,
+		TargetSets:    request.TargetSets,
+		TargetRepsMin: request.TargetRepsMin,
+		TargetRepsMax: request.TargetRepsMax,
+	}); err != nil {
+		writeServiceError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
 }
