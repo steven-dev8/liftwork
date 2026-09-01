@@ -32,6 +32,19 @@ type RoutineOutput struct {
 	UpdatedAt   time.Time
 }
 
+type ExerciseRoutine struct {
+	Name          string
+	Position      int32
+	TargetSets    int32
+	TargetRepsMin int32
+	TargetRepsMax int32
+}
+
+type ListRoutineOutput struct {
+	Routine   RoutineOutput
+	Exercises []ExerciseRoutine
+}
+
 func (r *RoutineService) Create(
 	ctx context.Context,
 	input CreateRoutineInput,
@@ -53,6 +66,39 @@ func (r *RoutineService) Create(
 	}
 
 	return routineToOutput(routineInfo), nil
+}
+
+func (r *RoutineService) List(
+	ctx context.Context,
+	userID int64,
+) ([]ListRoutineOutput, error) {
+	routines, err := r.repository.List(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("list routines: %w", err)
+	}
+
+	output := make([]ListRoutineOutput, len(routines))
+
+	for i, routineInfo := range routines {
+		exercises := make([]ExerciseRoutine, len(routineInfo.Exercises))
+
+		for j, exercise := range routineInfo.Exercises {
+			exercises[j] = ExerciseRoutine{
+				Name:          exercise.Name,
+				Position:      exercise.Position,
+				TargetSets:    exercise.TargetSets,
+				TargetRepsMin: exercise.TargetRepsMin,
+				TargetRepsMax: exercise.TargetRepsMax,
+			}
+		}
+
+		output[i] = ListRoutineOutput{
+			Routine:   routineToOutput(routineInfo.Routine),
+			Exercises: exercises,
+		}
+	}
+
+	return output, nil
 }
 
 func routineToOutput(routine domain.Routine) RoutineOutput {

@@ -28,6 +28,19 @@ type ExerciseUpdateParams struct {
 
 type CreateSessionOutput = CreateSessionParams
 
+type RoutineExerciseInfo struct {
+	Name          string
+	Position      int32
+	TargetSets    int32
+	TargetRepsMin int32
+	TargetRepsMax int32
+}
+
+type RoutineWithExercises struct {
+	Routine   domain.Routine
+	Exercises []RoutineExerciseInfo
+}
+
 type UserRepository interface {
 	Create(ctx context.Context, user domain.User) (domain.User, error)
 	FindByUsername(ctx context.Context, username string) (domain.User, error)
@@ -49,4 +62,5 @@ type ExerciseRepository interface {
 
 type RoutineRepository interface {
 	Create(ctx context.Context, routine domain.Routine) (domain.Routine, error)
+	List(ctx context.Context, userID int64) ([]RoutineWithExercises, error)
 }

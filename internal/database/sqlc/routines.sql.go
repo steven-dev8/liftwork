@@ -55,3 +55,85 @@ func (q *Queries) CreateRoutine(ctx context.Context, arg CreateRoutineParams) (R
 	)
 	return i, err
 }
+
+const getExerciseRoutine = `-- name: GetExerciseRoutine :many
+SELECT
+    e.name,
+    re.position,
+    re.target_sets,
+    re.target_reps_min,
+    re.target_reps_max
+FROM routine_exercises re
+INNER JOIN exercises e
+    ON e.id = re.exercise_id
+WHERE re.routine_id = $1
+ORDER BY re.position
+`
+
+type GetExerciseRoutineRow struct {
+	Name          string `json:"name"`
+	Position      int32  `json:"position"`
+	TargetSets    int32  `json:"target_sets"`
+	TargetRepsMin int32  `json:"target_reps_min"`
+	TargetRepsMax int32  `json:"target_reps_max"`
+}
+
+func (q *Queries) GetExerciseRoutine(ctx context.Context, routineID int64) ([]GetExerciseRoutineRow, error) {
+	rows, err := q.db.Query(ctx, getExerciseRoutine, routineID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetExerciseRoutineRow{}
+	for rows.Next() {
+		var i GetExerciseRoutineRow
+		if err := rows.Scan(
+			&i.Name,
+			&i.Position,
+			&i.TargetSets,
+			&i.TargetRepsMin,
+			&i.TargetRepsMax,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listRoutine = `-- name: ListRoutine :many
+SELECT id, user_id, code, name, description, created_at, updated_at
+FROM routines
+WHERE user_id = $1
+`
+
+func (q *Queries) ListRoutine(ctx context.Context, userID int64) ([]Routine, error) {
+	rows, err := q.db.Query(ctx, listRoutine, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Routine{}
+	for rows.Next() {
+		var i Routine
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.Code,
+			&i.Name,
+			&i.Description,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
