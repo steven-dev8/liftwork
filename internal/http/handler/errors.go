@@ -65,11 +65,11 @@ func writeServiceError(w http.ResponseWriter, err error) {
 			service.ErrInvalidExerciseMuscleGroup.Error(),
 		)
 	case errors.Is(err, service.ErrExerciseNotFound):
-	writeError(
-		w,
-		http.StatusNotFound,
-		service.ErrExerciseNotFound.Error(),
-	)
+		writeError(
+			w,
+			http.StatusNotFound,
+			service.ErrExerciseNotFound.Error(),
+		)
 
 	default:
 		if message, ok := domainValidationMessage(err); ok {
@@ -102,6 +102,9 @@ func domainValidationMessage(err error) (string, bool) {
 
 		domain.ErrExerciseNameRequired,
 		domain.ErrExerciseMucleGroupRequired,
+
+		domain.ErrRoutineNameRequired,
+		domain.ErrInvalidRoutineCode,
 	}
 
 	for _, validationErr := range validationErrors {

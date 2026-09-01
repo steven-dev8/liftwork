@@ -24,10 +24,15 @@ func New(dbtx db.DBTX, cfg *config.Config) *App {
 	authService := service.NewAuthService(userRepo, sessionRepo, cfg.JWTSecretKey, cfg.JWTTTL, cfg.RefreshTokenTTL)
 	authHandler := handler.NewAuthHandler(authService)
 
+	routineRepo := postgres.NewRoutineRepository(dbtx)
+	routineService := service.NewRoutineService(routineRepo)
+	routineHandler := handler.NewRoutineHandler(routineService)
+
 	return &App{
 		Handlers: httpapi.Handlers{
 			Auth:     authHandler,
 			Exercise: exerciseHandler,
+			Routine:  routineHandler,
 		},
 	}
 }

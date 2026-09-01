@@ -14,6 +14,7 @@ import (
 type Handlers struct {
 	Auth     *handler.AuthHandler
 	Exercise *handler.ExerciseHandler
+	Routine  *handler.RoutineHandler
 }
 
 func NewRouter(
@@ -47,6 +48,8 @@ func NewRouter(
 		r.Post("/exercises", handlers.Exercise.Create)
 		r.Patch("/exercises/{id}", handlers.Exercise.Update)
 		r.Delete("/exercises/{id}", handlers.Exercise.Delete)
+
+		r.Post("/routines", handlers.Routine.Create)
 	})
 
 	return router
