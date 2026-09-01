@@ -50,6 +50,7 @@ func NewRouter(
 		r.Delete("/exercises/{id}", handlers.Exercise.Delete)
 
 		r.Post("/routines", handlers.Routine.Create)
+		r.Get("/routines", handlers.Routine.List)
 	})
 
 	return router
