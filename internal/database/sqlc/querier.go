@@ -12,6 +12,7 @@ type Querier interface {
 	CreateExercise(ctx context.Context, arg CreateExerciseParams) (Exercise, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) (CreateSessionRow, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error)
+	DeleteExerciseByID(ctx context.Context, arg DeleteExerciseByIDParams) (int64, error)
 	GetExercises(ctx context.Context, userID *int64) ([]GetExercisesRow, error)
 	GetSessionByRefreshTokenHash(ctx context.Context, refreshTokenHash string) (GetSessionByRefreshTokenHashRow, error)
 	GetUser(ctx context.Context, username string) (GetUserRow, error)

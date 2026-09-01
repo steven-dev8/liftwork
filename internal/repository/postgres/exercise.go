@@ -107,3 +107,24 @@ func (e *ExerciseRepository) Update(
 		UpdatedAt:   exercise.UpdatedAt.Time,
 	}, nil
 }
+
+func (e *ExerciseRepository) Delete(
+	ctx context.Context,
+	id int64,
+	userID int64,
+) error {
+	rows, err := e.querier.DeleteExerciseByID(ctx, db.DeleteExerciseByIDParams{
+		ID:     id,
+		UserID: &userID,
+	})
+
+	if err != nil {
+		return fmt.Errorf("delete exercise: %w", err)
+	}
+
+	if rows == 0 {
+		return repository.ErrExerciseNotFound
+	}
+
+	return nil
+}

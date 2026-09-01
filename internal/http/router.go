@@ -43,9 +43,10 @@ func NewRouter(
 	router.Group(func(r chi.Router) {
 		r.Use(middleware.Auth(cfg.JWTSecretKey))
 
-		r.Post("/exercises", handlers.Exercise.Create)
 		r.Get("/exercises", handlers.Exercise.List)
+		r.Post("/exercises", handlers.Exercise.Create)
 		r.Patch("/exercises/{id}", handlers.Exercise.Update)
+		r.Delete("/exercises/{id}", handlers.Exercise.Delete)
 	})
 
 	return router

@@ -161,3 +161,31 @@ func (h *ExerciseHandler) Update(w http.ResponseWriter, r *http.Request) {
 		UpdatedAt:   exercise.UpdatedAt,
 	})
 }
+
+func (h *ExerciseHandler) Delete(w http.ResponseWriter, r *http.Request) {
+	idParam := chi.URLParam(r, "id")
+
+	exerciseID, err := strconv.ParseInt(idParam, 10, 64)
+	if err != nil || exerciseID <= 0 {
+		writeError(w, http.StatusBadRequest, "invalid exercise id")
+		return
+	}
+
+	userID, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{
+			"error": "unauthorized",
+		})
+		return
+	}
+
+	if err := h.service.Delete(r.Context(), service.DeleteExerciseInput{
+		ID:     exerciseID,
+		UserID: userID,
+	}); err != nil {
+		writeServiceError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}

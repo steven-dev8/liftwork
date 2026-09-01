@@ -26,3 +26,8 @@ SET
     updated_at = now()
 WHERE id = @id AND user_id = @user_id
 RETURNING *;
+
+-- name: DeleteExerciseByID :execrows
+DELETE FROM exercises
+WHERE id = @id
+  AND user_id = @user_id;

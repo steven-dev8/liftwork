@@ -53,6 +53,25 @@ func (q *Queries) CreateExercise(ctx context.Context, arg CreateExerciseParams) 
 	return i, err
 }
 
+const deleteExerciseByID = `-- name: DeleteExerciseByID :execrows
+DELETE FROM exercises
+WHERE id = $1
+  AND user_id = $2
+`
+
+type DeleteExerciseByIDParams struct {
+	ID     int64  `json:"id"`
+	UserID *int64 `json:"user_id"`
+}
+
+func (q *Queries) DeleteExerciseByID(ctx context.Context, arg DeleteExerciseByIDParams) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteExerciseByID, arg.ID, arg.UserID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const getExercises = `-- name: GetExercises :many
 SELECT id, name, muscle_group, notes, created_at, updated_at
 FROM exercises
