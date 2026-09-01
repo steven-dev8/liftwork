@@ -44,4 +44,5 @@ type ExerciseRepository interface {
 	Create(ctx context.Context, userID int64, exercise domain.Exercise) (domain.Exercise, error)
 	List(ctx context.Context, userID int64) ([]domain.Exercise, error)
 	Update(ctx context.Context, exerciseInfo ExerciseUpdateParams) (domain.Exercise, error)
+	Delete(ctx context.Context, id int64, userID int64) error
 }

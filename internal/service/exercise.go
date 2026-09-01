@@ -42,6 +42,11 @@ type UpdateExerciseInput struct {
 	Notes       *string
 }
 
+type DeleteExerciseInput struct {
+	ID     int64
+	UserID int64
+}
+
 func (s *ExerciseService) Create(
 	ctx context.Context,
 	input CreateExerciseInput,
@@ -155,4 +160,15 @@ func (s *ExerciseService) Update(
 		CreatedAt:   exercise.CreatedAt,
 		UpdatedAt:   exercise.UpdatedAt,
 	}, nil
+}
+
+func (s *ExerciseService) Delete(ctx context.Context, input DeleteExerciseInput) error {
+	if err := s.repository.Delete(ctx, input.ID, input.UserID); err != nil {
+		if errors.Is(err, repository.ErrExerciseNotFound) {
+			return ErrExerciseNotFound
+		}
+		return fmt.Errorf("delete exercise: %w", err)
+	}
+
+	return nil
 }
