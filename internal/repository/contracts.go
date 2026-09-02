@@ -64,6 +64,7 @@ type ExerciseRepository interface {
 type RoutineRepository interface {
 	Create(ctx context.Context, routine domain.Routine) (domain.Routine, error)
 	List(ctx context.Context, userID int64) ([]RoutineWithExercises, error)
+	Delete(ctx context.Context, userID int64, routineID int64) error
 	AddExerciseRoutine(ctx context.Context, userID int64, routineExercise domain.RoutineExercise) error
 	DeleteExerciseRoutine(ctx context.Context, userID int64, routineID int64, exerciseID int64) error
 }

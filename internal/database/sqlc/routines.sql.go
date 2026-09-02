@@ -132,6 +132,24 @@ func (q *Queries) DeleteExerciseRoutine(ctx context.Context, arg DeleteExerciseR
 	return position, err
 }
 
+const deleteRoutine = `-- name: DeleteRoutine :execrows
+DELETE FROM routines
+WHERE id = $1 AND user_id = $2
+`
+
+type DeleteRoutineParams struct {
+	ID     int64 `json:"id"`
+	UserID int64 `json:"user_id"`
+}
+
+func (q *Queries) DeleteRoutine(ctx context.Context, arg DeleteRoutineParams) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteRoutine, arg.ID, arg.UserID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const getExerciseRoutine = `-- name: GetExerciseRoutine :many
 SELECT
     e.id,

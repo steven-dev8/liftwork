@@ -79,3 +79,7 @@ UPDATE routine_exercises
 SET position = position - 1
 WHERE routine_id = @routine_id
   AND position > @deleted_position;
+
+-- name: DeleteRoutine :execrows
+DELETE FROM routines
+WHERE id = @id AND user_id = @user_id;

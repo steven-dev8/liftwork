@@ -99,6 +99,26 @@ func (r *RoutineRepository) List(
 	return listRoutines, nil
 }
 
+func (r *RoutineRepository) Delete(
+	ctx context.Context,
+	userID int64,
+	routineID int64,
+) error {
+	rows, err := r.querier.DeleteRoutine(ctx, db.DeleteRoutineParams{
+		ID:     routineID,
+		UserID: userID,
+	})
+	if err != nil {
+		return fmt.Errorf("delete routine: %w", err)
+	}
+
+	if rows == 0 {
+		return repository.ErrRoutineNotFound
+	}
+
+	return nil
+}
+
 func (r *RoutineRepository) AddExerciseRoutine(
 	ctx context.Context,
 	userID int64,

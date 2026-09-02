@@ -14,6 +14,7 @@ var (
 	ErrEmptyExerciseUpdate        = errors.New("no exercise fields to update")
 	ErrExerciseNotFound           = errors.New("exercise not found")
 
+	ErrRoutineNotFound           = errors.New("routine not found")
 	ErrRoutineOrExerciseNotFound = errors.New("routine or exercise not found")
 	ErrRoutineExerciseNotFound   = errors.New("routine exercise not found")
 )

@@ -120,6 +120,22 @@ func (r *RoutineService) List(
 	return output, nil
 }
 
+func (r *RoutineService) Delete(
+	ctx context.Context,
+	userID int64,
+	routineID int64,
+) error {
+	if err := r.repository.Delete(ctx, userID, routineID); err != nil {
+		if errors.Is(err, repository.ErrRoutineNotFound) {
+			return ErrRoutineNotFound
+		}
+
+		return fmt.Errorf("delete routine: %w", err)
+	}
+
+	return nil
+}
+
 func (r *RoutineService) AddExerciseRoutine(
 	ctx context.Context,
 	input AddExerciseRoutineInput,
