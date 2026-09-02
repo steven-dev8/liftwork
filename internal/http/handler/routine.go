@@ -43,6 +43,7 @@ type routineResponse struct {
 }
 
 type routineExerciseResponse struct {
+	ExerciseID    int64  `json:"exercise_id"`
 	Name          string `json:"name"`
 	Position      int32  `json:"position"`
 	TargetSets    int32  `json:"target_sets"`
@@ -123,6 +124,7 @@ func (h *RoutineHandler) List(w http.ResponseWriter, r *http.Request) {
 
 		for j, exercise := range routine.Exercises {
 			exercises[j] = routineExerciseResponse{
+				ExerciseID:    exercise.ID,
 				Name:          exercise.Name,
 				Position:      exercise.Position,
 				TargetSets:    exercise.TargetSets,
@@ -186,4 +188,71 @@ func (h *RoutineHandler) AddExerciseRoutine(w http.ResponseWriter, r *http.Reque
 	}
 
 	w.WriteHeader(http.StatusCreated)
+}
+
+func (h *RoutineHandler) DeleteExerciseRoutine(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{
+			"error": "unauthorized",
+		})
+		return
+	}
+
+	routineIDParam := chi.URLParam(r, "routineID")
+	exerciseIDParam := chi.URLParam(r, "exerciseID")
+
+	routineID, err := strconv.ParseInt(routineIDParam, 10, 64)
+	if err != nil || routineID <= 0 {
+		writeError(w, http.StatusBadRequest, "invalid routine id")
+		return
+	}
+
+	exerciseID, err := strconv.ParseInt(exerciseIDParam, 10, 64)
+	if err != nil || exerciseID <= 0 {
+		writeError(w, http.StatusBadRequest, "invalid exercise id")
+		return
+	}
+
+	routines, err := h.service.DeleteExerciseRoutine(
+		r.Context(),
+		service.DeleteExerciseRoutineInput{
+			UserID:     userID,
+			RoutineID:  routineID,
+			ExerciseID: exerciseID,
+		},
+	)
+	if err != nil {
+		writeServiceError(w, err)
+		return
+	}
+
+	output := make([]listRoutineResponse, len(routines))
+
+	for i, routine := range routines {
+		exercises := make([]routineExerciseResponse, len(routine.Exercises))
+
+		for j, exercise := range routine.Exercises {
+			exercises[j] = routineExerciseResponse{
+				ExerciseID:    exercise.ID,
+				Name:          exercise.Name,
+				Position:      exercise.Position,
+				TargetSets:    exercise.TargetSets,
+				TargetRepsMin: exercise.TargetRepsMin,
+				TargetRepsMax: exercise.TargetRepsMax,
+			}
+		}
+
+		output[i] = listRoutineResponse{
+			ID:          routine.Routine.ID,
+			Name:        routine.Routine.Name,
+			Code:        routine.Routine.Code,
+			Description: routine.Routine.Description,
+			Exercises:   exercises,
+			CreatedAt:   routine.Routine.CreatedAt,
+			UpdatedAt:   routine.Routine.UpdatedAt,
+		}
+	}
+
+	writeJSON(w, http.StatusOK, output)
 }
