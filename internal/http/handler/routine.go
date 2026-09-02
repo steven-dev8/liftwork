@@ -147,6 +147,31 @@ func (h *RoutineHandler) List(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, output)
 }
 
+func (h *RoutineHandler) Delete(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{
+			"error": "unauthorized",
+		})
+		return
+	}
+
+	idParam := chi.URLParam(r, "id")
+
+	routineID, err := strconv.ParseInt(idParam, 10, 64)
+	if err != nil || routineID <= 0 {
+		writeError(w, http.StatusBadRequest, "invalid routine id")
+		return
+	}
+
+	if err := h.service.Delete(r.Context(), userID, routineID); err != nil {
+		writeServiceError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func (h *RoutineHandler) AddExerciseRoutine(w http.ResponseWriter, r *http.Request) {
 	userID, ok := middleware.UserIDFromContext(r.Context())
 	if !ok {
