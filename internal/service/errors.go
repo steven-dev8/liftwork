@@ -13,4 +13,7 @@ var (
 	ErrInvalidExerciseMuscleGroup = errors.New("muscle group name cannot be empty")
 	ErrEmptyExerciseUpdate        = errors.New("no exercise fields to update")
 	ErrExerciseNotFound           = errors.New("exercise not found")
+
+	ErrRoutineOrExerciseNotFound = errors.New("routine or exercise not found")
+	ErrRoutineExerciseNotFound   = errors.New("routine exercise not found")
 )
