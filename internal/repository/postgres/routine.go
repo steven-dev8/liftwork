@@ -2,18 +2,26 @@ package postgres
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"liftwork/internal/database"
 	db "liftwork/internal/database/sqlc"
 	"liftwork/internal/domain"
 	"liftwork/internal/repository"
+
+	"github.com/jackc/pgx/v5"
 )
 
 type RoutineRepository struct {
 	querier *db.Queries
+	dbtx    database.Transactor
 }
 
-func NewRoutineRepository(dbtx db.DBTX) *RoutineRepository {
-	return &RoutineRepository{querier: db.New(dbtx)}
+func NewRoutineRepository(dbtx database.Transactor) *RoutineRepository {
+	return &RoutineRepository{
+		querier: db.New(dbtx),
+		dbtx:    dbtx,
+	}
 }
 
 func (r *RoutineRepository) Create(
@@ -65,6 +73,7 @@ func (r *RoutineRepository) List(
 
 		for j, exercise := range exercises {
 			routineExercises[j] = repository.RoutineExerciseInfo{
+				ID:            exercise.ID,
 				Name:          exercise.Name,
 				Position:      exercise.Position,
 				TargetSets:    exercise.TargetSets,
@@ -110,6 +119,55 @@ func (r *RoutineRepository) AddExerciseRoutine(
 
 	if rows == 0 {
 		return repository.ErrRoutineOrExerciseNotFound
+	}
+
+	return nil
+}
+
+func (r *RoutineRepository) DeleteExerciseRoutine(
+	ctx context.Context,
+	userID int64,
+	routineID int64,
+	exerciseID int64,
+) error {
+	tx, err := r.dbtx.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("begin transaction: %w", err)
+	}
+
+	defer tx.Rollback(ctx)
+
+	qtx := r.querier.WithTx(tx)
+
+	position, err := qtx.DeleteExerciseRoutine(
+		ctx,
+		db.DeleteExerciseRoutineParams{
+			UserID:     userID,
+			RoutineID:  routineID,
+			ExerciseID: exerciseID,
+		},
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return repository.ErrRoutineExerciseNotFound
+		}
+
+		return fmt.Errorf("delete exercise from routine: %w", err)
+	}
+
+	err = qtx.ReorderRoutineExercises(
+		ctx,
+		db.ReorderRoutineExercisesParams{
+			RoutineID:       routineID,
+			DeletedPosition: position,
+		},
+	)
+	if err != nil {
+		return fmt.Errorf("reorder routine exercises: %w", err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit transaction: %w", err)
 	}
 
 	return nil

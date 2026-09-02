@@ -109,8 +109,32 @@ func (q *Queries) CreateRoutine(ctx context.Context, arg CreateRoutineParams) (R
 	return i, err
 }
 
+const deleteExerciseRoutine = `-- name: DeleteExerciseRoutine :one
+DELETE FROM routine_exercises re
+USING routines r
+WHERE re.routine_id = $1
+  AND re.exercise_id = $2
+  AND r.id = re.routine_id
+  AND r.user_id = $3
+RETURNING re.position
+`
+
+type DeleteExerciseRoutineParams struct {
+	RoutineID  int64 `json:"routine_id"`
+	ExerciseID int64 `json:"exercise_id"`
+	UserID     int64 `json:"user_id"`
+}
+
+func (q *Queries) DeleteExerciseRoutine(ctx context.Context, arg DeleteExerciseRoutineParams) (int32, error) {
+	row := q.db.QueryRow(ctx, deleteExerciseRoutine, arg.RoutineID, arg.ExerciseID, arg.UserID)
+	var position int32
+	err := row.Scan(&position)
+	return position, err
+}
+
 const getExerciseRoutine = `-- name: GetExerciseRoutine :many
 SELECT
+    e.id,
     e.name,
     re.position,
     re.target_sets,
@@ -124,6 +148,7 @@ ORDER BY re.position
 `
 
 type GetExerciseRoutineRow struct {
+	ID            int64  `json:"id"`
 	Name          string `json:"name"`
 	Position      int32  `json:"position"`
 	TargetSets    int32  `json:"target_sets"`
@@ -141,6 +166,7 @@ func (q *Queries) GetExerciseRoutine(ctx context.Context, routineID int64) ([]Ge
 	for rows.Next() {
 		var i GetExerciseRoutineRow
 		if err := rows.Scan(
+			&i.ID,
 			&i.Name,
 			&i.Position,
 			&i.TargetSets,
@@ -189,4 +215,21 @@ func (q *Queries) ListRoutine(ctx context.Context, userID int64) ([]Routine, err
 		return nil, err
 	}
 	return items, nil
+}
+
+const reorderRoutineExercises = `-- name: ReorderRoutineExercises :exec
+UPDATE routine_exercises
+SET position = position - 1
+WHERE routine_id = $1
+  AND position > $2
+`
+
+type ReorderRoutineExercisesParams struct {
+	RoutineID       int64 `json:"routine_id"`
+	DeletedPosition int32 `json:"deleted_position"`
+}
+
+func (q *Queries) ReorderRoutineExercises(ctx context.Context, arg ReorderRoutineExercisesParams) error {
+	_, err := q.db.Exec(ctx, reorderRoutineExercises, arg.RoutineID, arg.DeletedPosition)
+	return err
 }

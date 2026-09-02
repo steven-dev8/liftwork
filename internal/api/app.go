@@ -2,7 +2,7 @@ package api
 
 import (
 	"liftwork/internal/config"
-	db "liftwork/internal/database/sqlc"
+	"liftwork/internal/database"
 	httpapi "liftwork/internal/http"
 	"liftwork/internal/http/handler"
 	"liftwork/internal/repository/postgres"
@@ -13,7 +13,7 @@ type App struct {
 	Handlers httpapi.Handlers
 }
 
-func New(dbtx db.DBTX, cfg *config.Config) *App {
+func New(dbtx database.Transactor, cfg *config.Config) *App {
 	sessionRepo := postgres.NewSessionRepository(dbtx)
 	userRepo := postgres.NewUserRepository(dbtx)
 

@@ -15,11 +15,13 @@ type Querier interface {
 	CreateSession(ctx context.Context, arg CreateSessionParams) (CreateSessionRow, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error)
 	DeleteExerciseByID(ctx context.Context, arg DeleteExerciseByIDParams) (int64, error)
+	DeleteExerciseRoutine(ctx context.Context, arg DeleteExerciseRoutineParams) (int32, error)
 	GetExerciseRoutine(ctx context.Context, routineID int64) ([]GetExerciseRoutineRow, error)
 	GetExercises(ctx context.Context, userID *int64) ([]GetExercisesRow, error)
 	GetSessionByRefreshTokenHash(ctx context.Context, refreshTokenHash string) (GetSessionByRefreshTokenHashRow, error)
 	GetUser(ctx context.Context, username string) (GetUserRow, error)
 	ListRoutine(ctx context.Context, userID int64) ([]Routine, error)
+	ReorderRoutineExercises(ctx context.Context, arg ReorderRoutineExercisesParams) error
 	RevokeSession(ctx context.Context, refreshTokenHash string) (int64, error)
 	RotateRefreshToken(ctx context.Context, arg RotateRefreshTokenParams) (int64, error)
 	UpdateExerciseById(ctx context.Context, arg UpdateExerciseByIdParams) (Exercise, error)

@@ -26,6 +26,7 @@ WHERE user_id = @user_id;
 
 -- name: GetExerciseRoutine :many
 SELECT
+    e.id,
     e.name,
     re.position,
     re.target_sets,
@@ -63,3 +64,18 @@ WHERE r.id = @routine_id
       e.user_id = @user_id
       OR e.user_id IS NULL
   );
+
+-- name: DeleteExerciseRoutine :one
+DELETE FROM routine_exercises re
+USING routines r
+WHERE re.routine_id = @routine_id
+  AND re.exercise_id = @exercise_id
+  AND r.id = re.routine_id
+  AND r.user_id = @user_id
+RETURNING re.position;
+
+-- name: ReorderRoutineExercises :exec
+UPDATE routine_exercises
+SET position = position - 1
+WHERE routine_id = @routine_id
+  AND position > @deleted_position;

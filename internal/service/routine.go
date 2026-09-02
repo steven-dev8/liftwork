@@ -34,6 +34,7 @@ type RoutineOutput struct {
 }
 
 type ExerciseRoutine struct {
+	ID            int64
 	Name          string
 	Position      int32
 	TargetSets    int32
@@ -54,6 +55,12 @@ type AddExerciseRoutineInput struct {
 type ListRoutineOutput struct {
 	Routine   RoutineOutput
 	Exercises []ExerciseRoutine
+}
+
+type DeleteExerciseRoutineInput struct {
+	UserID     int64
+	ExerciseID int64
+	RoutineID  int64
 }
 
 func (r *RoutineService) Create(
@@ -95,6 +102,7 @@ func (r *RoutineService) List(
 
 		for j, exercise := range routineInfo.Exercises {
 			exercises[j] = ExerciseRoutine{
+				ID:            exercise.ID,
 				Name:          exercise.Name,
 				Position:      exercise.Position,
 				TargetSets:    exercise.TargetSets,
@@ -141,6 +149,26 @@ func (r *RoutineService) AddExerciseRoutine(
 	}
 
 	return nil
+}
+
+func (r *RoutineService) DeleteExerciseRoutine(
+	ctx context.Context,
+	input DeleteExerciseRoutineInput,
+) ([]ListRoutineOutput, error) {
+	if err := r.repository.DeleteExerciseRoutine(
+		ctx,
+		input.UserID,
+		input.RoutineID,
+		input.ExerciseID,
+	); err != nil {
+		if errors.Is(err, repository.ErrRoutineExerciseNotFound) {
+			return nil, ErrRoutineExerciseNotFound
+		}
+
+		return nil, fmt.Errorf("delete exercise from routine: %w", err)
+	}
+
+	return r.List(ctx, input.UserID)
 }
 
 func routineToOutput(routine domain.Routine) RoutineOutput {
