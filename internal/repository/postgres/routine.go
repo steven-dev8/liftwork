@@ -99,6 +99,36 @@ func (r *RoutineRepository) List(
 	return listRoutines, nil
 }
 
+func (r *RoutineRepository) Update(
+	ctx context.Context,
+	routineInfo repository.UpdateRoutineParams,
+) (domain.Routine, error) {
+	routine, err := r.querier.UpdateRoutine(ctx, db.UpdateRoutineParams{
+		Code:        routineInfo.Code,
+		Name:        routineInfo.Name,
+		Description: routineInfo.Description,
+		ID:          routineInfo.ID,
+		UserID:      routineInfo.UserID,
+	})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return domain.Routine{}, repository.ErrRoutineNotFound
+		}
+
+		return domain.Routine{}, fmt.Errorf("update routine: %w", err)
+	}
+
+	return domain.Routine{
+		ID:          routine.ID,
+		UserID:      routine.UserID,
+		Code:        domain.RoutineCode(routine.Code),
+		Name:        routine.Name,
+		Description: routine.Description,
+		CreatedAt:   routine.CreatedAt.Time,
+		UpdatedAt:   routine.UpdatedAt.Time,
+	}, nil
+}
+
 func (r *RoutineRepository) Delete(
 	ctx context.Context,
 	userID int64,

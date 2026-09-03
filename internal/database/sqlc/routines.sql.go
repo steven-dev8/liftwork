@@ -251,3 +251,44 @@ func (q *Queries) ReorderRoutineExercises(ctx context.Context, arg ReorderRoutin
 	_, err := q.db.Exec(ctx, reorderRoutineExercises, arg.RoutineID, arg.DeletedPosition)
 	return err
 }
+
+const updateRoutine = `-- name: UpdateRoutine :one
+UPDATE routines
+SET
+    code = COALESCE($1, code),
+    name = COALESCE($2, name),
+    description = COALESCE($3, description),
+    updated_at = now()
+WHERE id = $4
+  AND user_id = $5
+RETURNING id, user_id, code, name, description, created_at, updated_at
+`
+
+type UpdateRoutineParams struct {
+	Code        *string `json:"code"`
+	Name        *string `json:"name"`
+	Description *string `json:"description"`
+	ID          int64   `json:"id"`
+	UserID      int64   `json:"user_id"`
+}
+
+func (q *Queries) UpdateRoutine(ctx context.Context, arg UpdateRoutineParams) (Routine, error) {
+	row := q.db.QueryRow(ctx, updateRoutine,
+		arg.Code,
+		arg.Name,
+		arg.Description,
+		arg.ID,
+		arg.UserID,
+	)
+	var i Routine
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Code,
+		&i.Name,
+		&i.Description,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}

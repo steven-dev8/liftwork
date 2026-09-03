@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"liftwork/internal/domain"
 	"liftwork/internal/repository"
+	"strings"
 	"time"
 )
 
@@ -22,6 +23,14 @@ type CreateRoutineInput struct {
 	Name        string
 	Code        string
 	Description string
+}
+
+type UpdateRoutineInput struct {
+	ID          int64
+	UserID      int64
+	Name        *string
+	Code        *string
+	Description *string
 }
 
 type RoutineOutput struct {
@@ -118,6 +127,64 @@ func (r *RoutineService) List(
 	}
 
 	return output, nil
+}
+
+func (r *RoutineService) Update(
+	ctx context.Context,
+	input UpdateRoutineInput,
+) (RoutineOutput, error) {
+	if input.Code == nil &&
+		input.Name == nil &&
+		input.Description == nil {
+		return RoutineOutput{}, ErrEmptyRoutineUpdate
+	}
+
+	if input.Code != nil {
+		code := strings.TrimSpace(*input.Code)
+
+		if code == "" {
+			return RoutineOutput{}, domain.ErrInvalidRoutineCode
+		}
+
+		routineCode := domain.RoutineCode(code)
+		if !routineCode.IsValid() {
+			return RoutineOutput{}, domain.ErrInvalidRoutineCode
+		}
+
+		input.Code = &code
+	}
+
+	if input.Name != nil {
+		name := strings.TrimSpace(*input.Name)
+
+		if name == "" {
+			return RoutineOutput{}, domain.ErrRoutineNameRequired
+		}
+
+		input.Name = &name
+	}
+
+	if input.Description != nil {
+		description := strings.TrimSpace(*input.Description)
+		input.Description = &description
+	}
+
+	routine, err := r.repository.Update(ctx, repository.UpdateRoutineParams{
+		ID:          input.ID,
+		UserID:      input.UserID,
+		Code:        input.Code,
+		Name:        input.Name,
+		Description: input.Description,
+	})
+	if err != nil {
+		if errors.Is(err, repository.ErrRoutineNotFound) {
+			return RoutineOutput{}, ErrRoutineNotFound
+		}
+
+		return RoutineOutput{}, fmt.Errorf("update routine: %w", err)
+	}
+
+	return routineToOutput(routine), nil
 }
 
 func (r *RoutineService) Delete(

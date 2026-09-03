@@ -26,6 +26,7 @@ type Querier interface {
 	RevokeSession(ctx context.Context, refreshTokenHash string) (int64, error)
 	RotateRefreshToken(ctx context.Context, arg RotateRefreshTokenParams) (int64, error)
 	UpdateExerciseById(ctx context.Context, arg UpdateExerciseByIdParams) (Exercise, error)
+	UpdateRoutine(ctx context.Context, arg UpdateRoutineParams) (Routine, error)
 }
 
 var _ Querier = (*Queries)(nil)

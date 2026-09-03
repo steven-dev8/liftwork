@@ -83,3 +83,14 @@ WHERE routine_id = @routine_id
 -- name: DeleteRoutine :execrows
 DELETE FROM routines
 WHERE id = @id AND user_id = @user_id;
+
+-- name: UpdateRoutine :one
+UPDATE routines
+SET
+    code = COALESCE(sqlc.narg(code), code),
+    name = COALESCE(sqlc.narg(name), name),
+    description = COALESCE(sqlc.narg(description), description),
+    updated_at = now()
+WHERE id = @id
+  AND user_id = @user_id
+RETURNING *;
