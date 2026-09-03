@@ -14,6 +14,7 @@ type Querier interface {
 	CreateRoutine(ctx context.Context, arg CreateRoutineParams) (Routine, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) (CreateSessionRow, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error)
+	CreateWorkoutSession(ctx context.Context, arg CreateWorkoutSessionParams) (WorkoutSession, error)
 	DeleteExerciseByID(ctx context.Context, arg DeleteExerciseByIDParams) (int64, error)
 	DeleteExerciseRoutine(ctx context.Context, arg DeleteExerciseRoutineParams) (int32, error)
 	DeleteRoutine(ctx context.Context, arg DeleteRoutineParams) (int64, error)
