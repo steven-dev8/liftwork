@@ -96,6 +96,7 @@ type WorkoutExercise struct {
 
 type WorkoutSession struct {
 	ID         int64              `json:"id"`
+	UserID     int64              `json:"user_id"`
 	RoutineID  *int64             `json:"routine_id"`
 	StartedAt  pgtype.Timestamptz `json:"started_at"`
 	FinishedAt pgtype.Timestamptz `json:"finished_at"`

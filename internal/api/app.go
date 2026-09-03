@@ -28,11 +28,16 @@ func New(dbtx database.Transactor, cfg *config.Config) *App {
 	routineService := service.NewRoutineService(routineRepo)
 	routineHandler := handler.NewRoutineHandler(routineService)
 
+	workoutRepo := postgres.NewWorkoutRepository(dbtx)
+	workoutService := service.NewWorkoutService(workoutRepo)
+	workoutHandler := handler.NewWorkoutHandler(workoutService)
+
 	return &App{
 		Handlers: httpapi.Handlers{
 			Auth:     authHandler,
 			Exercise: exerciseHandler,
 			Routine:  routineHandler,
+			Workout:  workoutHandler,
 		},
 	}
 }

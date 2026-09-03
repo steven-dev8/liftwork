@@ -90,3 +90,7 @@ type RoutineRepository interface {
 	) (domain.RoutineExercise, error)
 	DeleteExerciseRoutine(ctx context.Context, userID int64, routineID int64, exerciseID int64) error
 }
+
+type WorkoutRepository interface {
+	Create(ctx context.Context, userID int64, workout domain.WorkoutSession) (domain.WorkoutSession, error)
+}
