@@ -252,6 +252,56 @@ func (q *Queries) ReorderRoutineExercises(ctx context.Context, arg ReorderRoutin
 	return err
 }
 
+const updateExerciseRoutine = `-- name: UpdateExerciseRoutine :one
+UPDATE routine_exercises re
+SET
+    target_sets = COALESCE($1, re.target_sets),
+    target_reps_min = COALESCE($2, re.target_reps_min),
+    target_reps_max = COALESCE($3, re.target_reps_max)
+FROM routines r
+JOIN exercises e
+    ON e.id = $5
+WHERE re.routine_id = $4
+  AND re.exercise_id = $5
+  AND r.id = re.routine_id
+  AND r.user_id = $6
+  AND (
+      e.user_id = $6
+      OR e.user_id IS NULL
+  )
+RETURNING re.routine_id, re.exercise_id, re.position, re.target_sets, re.target_reps_min, re.target_reps_max
+`
+
+type UpdateExerciseRoutineParams struct {
+	TargetSets    *int32 `json:"target_sets"`
+	TargetRepsMin *int32 `json:"target_reps_min"`
+	TargetRepsMax *int32 `json:"target_reps_max"`
+	RoutineID     int64  `json:"routine_id"`
+	ExerciseID    int64  `json:"exercise_id"`
+	UserID        int64  `json:"user_id"`
+}
+
+func (q *Queries) UpdateExerciseRoutine(ctx context.Context, arg UpdateExerciseRoutineParams) (RoutineExercise, error) {
+	row := q.db.QueryRow(ctx, updateExerciseRoutine,
+		arg.TargetSets,
+		arg.TargetRepsMin,
+		arg.TargetRepsMax,
+		arg.RoutineID,
+		arg.ExerciseID,
+		arg.UserID,
+	)
+	var i RoutineExercise
+	err := row.Scan(
+		&i.RoutineID,
+		&i.ExerciseID,
+		&i.Position,
+		&i.TargetSets,
+		&i.TargetRepsMin,
+		&i.TargetRepsMax,
+	)
+	return i, err
+}
+
 const updateRoutine = `-- name: UpdateRoutine :one
 UPDATE routines
 SET

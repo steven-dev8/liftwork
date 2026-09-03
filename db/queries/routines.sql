@@ -38,6 +38,20 @@ INNER JOIN exercises e
 WHERE re.routine_id = @routine_id
 ORDER BY re.position;
 
+-- name: UpdateRoutine :one
+UPDATE routines
+SET
+    code = COALESCE(sqlc.narg(code), code),
+    name = COALESCE(sqlc.narg(name), name),
+    description = COALESCE(sqlc.narg(description), description),
+    updated_at = now()
+WHERE id = @id
+  AND user_id = @user_id
+RETURNING *;
+
+-- name: DeleteRoutine :execrows
+DELETE FROM routines
+WHERE id = @id AND user_id = @user_id;
 
 -- name: AddExerciseRoutine :execrows
 INSERT INTO routine_exercises (
@@ -65,6 +79,25 @@ WHERE r.id = @routine_id
       OR e.user_id IS NULL
   );
 
+-- name: UpdateExerciseRoutine :one
+UPDATE routine_exercises re
+SET
+    target_sets = COALESCE(sqlc.narg(target_sets), re.target_sets),
+    target_reps_min = COALESCE(sqlc.narg(target_reps_min), re.target_reps_min),
+    target_reps_max = COALESCE(sqlc.narg(target_reps_max), re.target_reps_max)
+FROM routines r
+JOIN exercises e
+    ON e.id = @exercise_id
+WHERE re.routine_id = @routine_id
+  AND re.exercise_id = @exercise_id
+  AND r.id = re.routine_id
+  AND r.user_id = @user_id
+  AND (
+      e.user_id = @user_id
+      OR e.user_id IS NULL
+  )
+RETURNING re.*;
+
 -- name: DeleteExerciseRoutine :one
 DELETE FROM routine_exercises re
 USING routines r
@@ -79,18 +112,3 @@ UPDATE routine_exercises
 SET position = position - 1
 WHERE routine_id = @routine_id
   AND position > @deleted_position;
-
--- name: DeleteRoutine :execrows
-DELETE FROM routines
-WHERE id = @id AND user_id = @user_id;
-
--- name: UpdateRoutine :one
-UPDATE routines
-SET
-    code = COALESCE(sqlc.narg(code), code),
-    name = COALESCE(sqlc.narg(name), name),
-    description = COALESCE(sqlc.narg(description), description),
-    updated_at = now()
-WHERE id = @id
-  AND user_id = @user_id
-RETURNING *;

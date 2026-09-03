@@ -33,6 +33,15 @@ type UpdateRoutineInput struct {
 	Description *string
 }
 
+type UpdateExerciseRoutineInput struct {
+	UserID        int64
+	RoutineID     int64
+	ExerciseID    int64
+	TargetSets    *int32
+	TargetRepsMin *int32
+	TargetRepsMax *int32
+}
+
 type RoutineOutput struct {
 	ID          int64
 	Name        string
@@ -232,6 +241,64 @@ func (r *RoutineService) AddExerciseRoutine(
 	}
 
 	return nil
+}
+
+func (r *RoutineService) UpdateExerciseRoutine(
+	ctx context.Context,
+	input UpdateExerciseRoutineInput,
+) (ExerciseRoutine, error) {
+	if input.TargetSets == nil &&
+		input.TargetRepsMin == nil &&
+		input.TargetRepsMax == nil {
+		return ExerciseRoutine{}, ErrEmptyRoutineExerciseUpdate
+	}
+
+	if input.TargetSets != nil && *input.TargetSets <= 0 {
+		return ExerciseRoutine{}, domain.ErrInvalidTargetSets
+	}
+
+	if input.TargetRepsMin != nil && *input.TargetRepsMin <= 0 {
+		return ExerciseRoutine{}, domain.ErrInvalidTargetRepsMin
+	}
+
+	if input.TargetRepsMax != nil && *input.TargetRepsMax <= 0 {
+		return ExerciseRoutine{}, domain.ErrInvalidTargetRepsRange
+	}
+
+	if input.TargetRepsMin != nil &&
+		input.TargetRepsMax != nil &&
+		*input.TargetRepsMax < *input.TargetRepsMin {
+		return ExerciseRoutine{}, domain.ErrInvalidTargetRepsRange
+	}
+
+	exerciseRoutine, err := r.repository.UpdateExerciseRoutine(
+		ctx,
+		repository.UpdateExerciseRoutineParams{
+			UserID:        input.UserID,
+			RoutineID:     input.RoutineID,
+			ExerciseID:    input.ExerciseID,
+			TargetSets:    input.TargetSets,
+			TargetRepsMin: input.TargetRepsMin,
+			TargetRepsMax: input.TargetRepsMax,
+		},
+	)
+	if err != nil {
+		if errors.Is(err, repository.ErrRoutineExerciseNotFound) {
+			return ExerciseRoutine{}, ErrRoutineExerciseNotFound
+		}
+
+		return ExerciseRoutine{}, fmt.Errorf(
+			"update routine exercise: %w",
+			err,
+		)
+	}
+
+	return ExerciseRoutine{
+		Position:      exerciseRoutine.Position,
+		TargetSets:    exerciseRoutine.TargetSets,
+		TargetRepsMin: exerciseRoutine.TargetRepsMin,
+		TargetRepsMax: exerciseRoutine.TargetRepsMax,
+	}, nil
 }
 
 func (r *RoutineService) DeleteExerciseRoutine(

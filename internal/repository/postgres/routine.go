@@ -174,6 +174,39 @@ func (r *RoutineRepository) AddExerciseRoutine(
 	return nil
 }
 
+func (r *RoutineRepository) UpdateExerciseRoutine(
+	ctx context.Context,
+	exerciseRoutineInfo repository.UpdateExerciseRoutineParams,
+) (domain.RoutineExercise, error) {
+	exerciseRoutine, err := r.querier.UpdateExerciseRoutine(
+		ctx,
+		db.UpdateExerciseRoutineParams{
+			UserID:        exerciseRoutineInfo.UserID,
+			ExerciseID:    exerciseRoutineInfo.ExerciseID,
+			RoutineID:     exerciseRoutineInfo.RoutineID,
+			TargetSets:    exerciseRoutineInfo.TargetSets,
+			TargetRepsMin: exerciseRoutineInfo.TargetRepsMin,
+			TargetRepsMax: exerciseRoutineInfo.TargetRepsMax,
+		},
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return domain.RoutineExercise{}, repository.ErrRoutineExerciseNotFound
+		}
+
+		return domain.RoutineExercise{}, fmt.Errorf("update routine exercise: %w", err)
+	}
+
+	return domain.RoutineExercise{
+		RoutineID:     exerciseRoutine.RoutineID,
+		ExerciseID:    exerciseRoutine.ExerciseID,
+		Position:      exerciseRoutine.Position,
+		TargetSets:    exerciseRoutine.TargetSets,
+		TargetRepsMin: exerciseRoutine.TargetRepsMin,
+		TargetRepsMax: exerciseRoutine.TargetRepsMax,
+	}, nil
+}
+
 func (r *RoutineRepository) DeleteExerciseRoutine(
 	ctx context.Context,
 	userID int64,
