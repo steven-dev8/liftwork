@@ -51,7 +51,11 @@ func NewRouter(
 
 		r.Post("/routines", handlers.Routine.Create)
 		r.Get("/routines", handlers.Routine.List)
+		r.Patch("/routines/{id}", handlers.Routine.Update)
+		r.Delete("/routines/{id}", handlers.Routine.Delete)
+
 		r.Post("/routines/{id}/exercises", handlers.Routine.AddExerciseRoutine)
+		r.Patch("/routines/{routineID}/exercises/{exerciseID}", handlers.Routine.UpdateExerciseRoutine)
 		r.Delete("/routines/{routineID}/exercises/{exerciseID}", handlers.Routine.DeleteExerciseRoutine)
 	})
 

@@ -16,6 +16,7 @@ type Querier interface {
 	CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error)
 	DeleteExerciseByID(ctx context.Context, arg DeleteExerciseByIDParams) (int64, error)
 	DeleteExerciseRoutine(ctx context.Context, arg DeleteExerciseRoutineParams) (int32, error)
+	DeleteRoutine(ctx context.Context, arg DeleteRoutineParams) (int64, error)
 	GetExerciseRoutine(ctx context.Context, routineID int64) ([]GetExerciseRoutineRow, error)
 	GetExercises(ctx context.Context, userID *int64) ([]GetExercisesRow, error)
 	GetSessionByRefreshTokenHash(ctx context.Context, refreshTokenHash string) (GetSessionByRefreshTokenHashRow, error)
@@ -25,6 +26,8 @@ type Querier interface {
 	RevokeSession(ctx context.Context, refreshTokenHash string) (int64, error)
 	RotateRefreshToken(ctx context.Context, arg RotateRefreshTokenParams) (int64, error)
 	UpdateExerciseById(ctx context.Context, arg UpdateExerciseByIdParams) (Exercise, error)
+	UpdateExerciseRoutine(ctx context.Context, arg UpdateExerciseRoutineParams) (RoutineExercise, error)
+	UpdateRoutine(ctx context.Context, arg UpdateRoutineParams) (Routine, error)
 }
 
 var _ Querier = (*Queries)(nil)

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"liftwork/internal/domain"
 	"liftwork/internal/repository"
+	"strings"
 	"time"
 )
 
@@ -22,6 +23,23 @@ type CreateRoutineInput struct {
 	Name        string
 	Code        string
 	Description string
+}
+
+type UpdateRoutineInput struct {
+	ID          int64
+	UserID      int64
+	Name        *string
+	Code        *string
+	Description *string
+}
+
+type UpdateExerciseRoutineInput struct {
+	UserID        int64
+	RoutineID     int64
+	ExerciseID    int64
+	TargetSets    *int32
+	TargetRepsMin *int32
+	TargetRepsMax *int32
 }
 
 type RoutineOutput struct {
@@ -120,6 +138,80 @@ func (r *RoutineService) List(
 	return output, nil
 }
 
+func (r *RoutineService) Update(
+	ctx context.Context,
+	input UpdateRoutineInput,
+) (RoutineOutput, error) {
+	if input.Code == nil &&
+		input.Name == nil &&
+		input.Description == nil {
+		return RoutineOutput{}, ErrEmptyRoutineUpdate
+	}
+
+	if input.Code != nil {
+		code := strings.TrimSpace(*input.Code)
+
+		if code == "" {
+			return RoutineOutput{}, domain.ErrInvalidRoutineCode
+		}
+
+		routineCode := domain.RoutineCode(code)
+		if !routineCode.IsValid() {
+			return RoutineOutput{}, domain.ErrInvalidRoutineCode
+		}
+
+		input.Code = &code
+	}
+
+	if input.Name != nil {
+		name := strings.TrimSpace(*input.Name)
+
+		if name == "" {
+			return RoutineOutput{}, domain.ErrRoutineNameRequired
+		}
+
+		input.Name = &name
+	}
+
+	if input.Description != nil {
+		description := strings.TrimSpace(*input.Description)
+		input.Description = &description
+	}
+
+	routine, err := r.repository.Update(ctx, repository.UpdateRoutineParams{
+		ID:          input.ID,
+		UserID:      input.UserID,
+		Code:        input.Code,
+		Name:        input.Name,
+		Description: input.Description,
+	})
+	if err != nil {
+		if errors.Is(err, repository.ErrRoutineNotFound) {
+			return RoutineOutput{}, ErrRoutineNotFound
+		}
+
+		return RoutineOutput{}, fmt.Errorf("update routine: %w", err)
+	}
+
+	return routineToOutput(routine), nil
+}
+
+func (r *RoutineService) Delete(
+	ctx context.Context,
+	userID int64,
+	routineID int64,
+) error {
+	if err := r.repository.Delete(ctx, userID, routineID); err != nil {
+		if errors.Is(err, repository.ErrRoutineNotFound) {
+			return ErrRoutineNotFound
+		}
+
+		return fmt.Errorf("delete routine: %w", err)
+	}
+
+	return nil
+}
+
 func (r *RoutineService) AddExerciseRoutine(
 	ctx context.Context,
 	input AddExerciseRoutineInput,
@@ -149,6 +241,64 @@ func (r *RoutineService) AddExerciseRoutine(
 	}
 
 	return nil
+}
+
+func (r *RoutineService) UpdateExerciseRoutine(
+	ctx context.Context,
+	input UpdateExerciseRoutineInput,
+) (ExerciseRoutine, error) {
+	if input.TargetSets == nil &&
+		input.TargetRepsMin == nil &&
+		input.TargetRepsMax == nil {
+		return ExerciseRoutine{}, ErrEmptyRoutineExerciseUpdate
+	}
+
+	if input.TargetSets != nil && *input.TargetSets <= 0 {
+		return ExerciseRoutine{}, domain.ErrInvalidTargetSets
+	}
+
+	if input.TargetRepsMin != nil && *input.TargetRepsMin <= 0 {
+		return ExerciseRoutine{}, domain.ErrInvalidTargetRepsMin
+	}
+
+	if input.TargetRepsMax != nil && *input.TargetRepsMax <= 0 {
+		return ExerciseRoutine{}, domain.ErrInvalidTargetRepsRange
+	}
+
+	if input.TargetRepsMin != nil &&
+		input.TargetRepsMax != nil &&
+		*input.TargetRepsMax < *input.TargetRepsMin {
+		return ExerciseRoutine{}, domain.ErrInvalidTargetRepsRange
+	}
+
+	exerciseRoutine, err := r.repository.UpdateExerciseRoutine(
+		ctx,
+		repository.UpdateExerciseRoutineParams{
+			UserID:        input.UserID,
+			RoutineID:     input.RoutineID,
+			ExerciseID:    input.ExerciseID,
+			TargetSets:    input.TargetSets,
+			TargetRepsMin: input.TargetRepsMin,
+			TargetRepsMax: input.TargetRepsMax,
+		},
+	)
+	if err != nil {
+		if errors.Is(err, repository.ErrRoutineExerciseNotFound) {
+			return ExerciseRoutine{}, ErrRoutineExerciseNotFound
+		}
+
+		return ExerciseRoutine{}, fmt.Errorf(
+			"update routine exercise: %w",
+			err,
+		)
+	}
+
+	return ExerciseRoutine{
+		Position:      exerciseRoutine.Position,
+		TargetSets:    exerciseRoutine.TargetSets,
+		TargetRepsMin: exerciseRoutine.TargetRepsMin,
+		TargetRepsMax: exerciseRoutine.TargetRepsMax,
+	}, nil
 }
 
 func (r *RoutineService) DeleteExerciseRoutine(
