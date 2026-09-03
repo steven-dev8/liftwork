@@ -90,6 +90,12 @@ func writeServiceError(w http.ResponseWriter, err error) {
 			http.StatusUnprocessableEntity,
 			service.ErrEmptyRoutineUpdate.Error(),
 		)
+	case errors.Is(err, service.ErrEmptyRoutineExerciseUpdate):
+		writeError(
+			w,
+			http.StatusUnprocessableEntity,
+			service.ErrEmptyRoutineExerciseUpdate.Error(),
+		)
 
 	default:
 		if message, ok := domainValidationMessage(err); ok {

@@ -39,6 +39,19 @@ type updateRoutineRequest struct {
 	Description *string `json:"description"`
 }
 
+type updateExerciseRoutineRequest struct {
+	TargetSets    *int32 `json:"target_sets"`
+	TargetRepsMin *int32 `json:"target_reps_min"`
+	TargetRepsMax *int32 `json:"target_reps_max"`
+}
+
+type updateExerciseRoutineResponse struct {
+	Position      int32 `json:"position"`
+	TargetSets    int32 `json:"target_sets"`
+	TargetRepsMin int32 `json:"target_reps_min"`
+	TargetRepsMax int32 `json:"target_reps_max"`
+}
+
 type routineResponse struct {
 	ID          int64     `json:"id"`
 	Name        string    `json:"name"`
@@ -271,6 +284,67 @@ func (h *RoutineHandler) AddExerciseRoutine(w http.ResponseWriter, r *http.Reque
 	}
 
 	w.WriteHeader(http.StatusCreated)
+}
+
+func (h *RoutineHandler) UpdateExerciseRoutine(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+	userID, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{
+			"error": "unauthorized",
+		})
+		return
+	}
+
+	routineIDParam := chi.URLParam(r, "routineID")
+	exerciseIDParam := chi.URLParam(r, "exerciseID")
+
+	routineID, err := strconv.ParseInt(routineIDParam, 10, 64)
+	if err != nil || routineID <= 0 {
+		writeError(w, http.StatusBadRequest, "invalid routine id")
+		return
+	}
+
+	exerciseID, err := strconv.ParseInt(exerciseIDParam, 10, 64)
+	if err != nil || exerciseID <= 0 {
+		writeError(w, http.StatusBadRequest, "invalid exercise id")
+		return
+	}
+
+	var request updateExerciseRoutineRequest
+
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+
+	if err := decoder.Decode(&request); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+
+	exerciseRoutine, err := h.service.UpdateExerciseRoutine(
+		r.Context(),
+		service.UpdateExerciseRoutineInput{
+			UserID:        userID,
+			RoutineID:     routineID,
+			ExerciseID:    exerciseID,
+			TargetSets:    request.TargetSets,
+			TargetRepsMin: request.TargetRepsMin,
+			TargetRepsMax: request.TargetRepsMax,
+		},
+	)
+	if err != nil {
+		writeServiceError(w, err)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, updateExerciseRoutineResponse{
+		Position:      exerciseRoutine.Position,
+		TargetSets:    exerciseRoutine.TargetSets,
+		TargetRepsMin: exerciseRoutine.TargetRepsMin,
+		TargetRepsMax: exerciseRoutine.TargetRepsMax,
+	})
 }
 
 func (h *RoutineHandler) DeleteExerciseRoutine(w http.ResponseWriter, r *http.Request) {
