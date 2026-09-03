@@ -33,6 +33,12 @@ type addExerciseRoutineRequest struct {
 	TargetRepsMax int32 `json:"target_reps_max"`
 }
 
+type updateRoutineRequest struct {
+	Code        *string `json:"code"`
+	Name        *string `json:"name"`
+	Description *string `json:"description"`
+}
+
 type routineResponse struct {
 	ID          int64     `json:"id"`
 	Name        string    `json:"name"`
@@ -145,6 +151,58 @@ func (h *RoutineHandler) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, output)
+}
+
+func (h *RoutineHandler) Update(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{
+			"error": "unauthorized",
+		})
+		return
+	}
+
+	idParam := chi.URLParam(r, "id")
+
+	routineID, err := strconv.ParseInt(idParam, 10, 64)
+	if err != nil || routineID <= 0 {
+		writeError(w, http.StatusBadRequest, "invalid routine id")
+		return
+	}
+
+	var request updateRoutineRequest
+
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+
+	if err := decoder.Decode(&request); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+
+	routine, err := h.service.Update(
+		r.Context(),
+		service.UpdateRoutineInput{
+			ID:          routineID,
+			UserID:      userID,
+			Code:        request.Code,
+			Name:        request.Name,
+			Description: request.Description,
+		},
+	)
+	if err != nil {
+		writeServiceError(w, err)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, routineResponse{
+		ID:          routine.ID,
+		Name:        routine.Name,
+		Code:        routine.Code,
+		Description: routine.Description,
+		CreatedAt:   routine.CreatedAt,
+		UpdatedAt:   routine.UpdatedAt,
+	})
 }
 
 func (h *RoutineHandler) Delete(w http.ResponseWriter, r *http.Request) {
