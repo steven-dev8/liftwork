@@ -6,8 +6,8 @@ import "time"
 type WorkoutSession struct {
 	ID         int64
 	RoutineID  int64
-	StartedAt  time.Time
-	FinishedAt time.Time
+	StartedAt  *time.Time
+	FinishedAt *time.Time
 	Notes      string
 	CreatedAt  time.Time
 }

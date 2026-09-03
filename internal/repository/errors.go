@@ -14,4 +14,6 @@ var (
 	ErrRoutineNotFound           = errors.New("routine not found")
 	ErrRoutineOrExerciseNotFound = errors.New("routine or exercise not found")
 	ErrRoutineExerciseNotFound   = errors.New("routine exercise not found")
+
+	ErrWorkoutAlreadyOpen = errors.New("workout already open")
 )
