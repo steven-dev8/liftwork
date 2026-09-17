@@ -59,6 +59,23 @@ type RoutineWithExercises struct {
 	Exercises []RoutineExerciseInfo
 }
 
+type WorkoutWithExercises struct {
+	Workout   domain.WorkoutSession
+	Exercises []WorkoutExerciseInfo
+}
+
+type WorkoutExerciseInfo struct {
+	ID            int64
+	ExerciseID    int64
+	Name          string
+	MuscleGroup   string
+	Notes         string
+	Position      int32
+	TargetSets    int32
+	TargetRepsMin int32
+	TargetRepsMax int32
+}
+
 type UserRepository interface {
 	Create(ctx context.Context, user domain.User) (domain.User, error)
 	FindByUsername(ctx context.Context, username string) (domain.User, error)
@@ -92,5 +109,6 @@ type RoutineRepository interface {
 }
 
 type WorkoutRepository interface {
-	Create(ctx context.Context, userID int64, workout domain.WorkoutSession) (domain.WorkoutSession, error)
+	CreateWithoutRoutine(ctx context.Context, userID int64, workout domain.WorkoutSession) (domain.WorkoutSession, error)
+	CreateFromRoutine(ctx context.Context, userID int64, workout domain.WorkoutSession) (WorkoutWithExercises, error)
 }

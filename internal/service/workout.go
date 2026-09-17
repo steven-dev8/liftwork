@@ -4,43 +4,109 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"liftwork/internal/domain"
-	"liftwork/internal/repository"
 	"strings"
 	"time"
+
+	"liftwork/internal/domain"
+	"liftwork/internal/repository"
 )
 
 type WorkoutService struct {
 	repository repository.WorkoutRepository
 }
 
-func NewWorkoutService(WorkoutRepo repository.WorkoutRepository) *WorkoutService {
-	return &WorkoutService{repository: WorkoutRepo}
+func NewWorkoutService(
+	workoutRepo repository.WorkoutRepository,
+) *WorkoutService {
+	return &WorkoutService{
+		repository: workoutRepo,
+	}
 }
 
 type CreateWorkoutSessionInput struct {
 	UserID    int64
-	RoutineID int64
+	RoutineID *int64
 	Notes     string
+}
+
+type WorkoutExerciseRoutine struct {
+	ID            int64
+	ExerciseID    int64
+	Name          string
+	MuscleGroup   string
+	Notes         string
+	Position      int32
+	TargetSets    int32
+	TargetRepsMin int32
+	TargetRepsMax int32
 }
 
 type WorkoutSessionOutput struct {
 	ID         int64
-	RoutineID  int64
+	RoutineID  *int64
 	StartedAt  *time.Time
 	FinishedAt *time.Time
 	Notes      string
 	CreatedAt  time.Time
+	Exercises  []WorkoutExerciseRoutine
 }
 
 func (w *WorkoutService) Create(
 	ctx context.Context,
 	input CreateWorkoutSessionInput,
 ) (WorkoutSessionOutput, error) {
-	if input.RoutineID <= 0 {
+	if input.RoutineID == nil {
+		return w.createFreeWorkout(ctx, input)
+	}
+	if *input.RoutineID <= 0 {
 		return WorkoutSessionOutput{}, ErrInvalidRoutineID
 	}
 
+	return w.createWorkoutFromRoutine(ctx, input)
+}
+
+func (w *WorkoutService) createFreeWorkout(
+	ctx context.Context,
+	input CreateWorkoutSessionInput,
+) (WorkoutSessionOutput, error) {
+	notes := strings.TrimSpace(input.Notes)
+
+	workout := domain.WorkoutSession{
+		RoutineID: nil,
+		Notes:     notes,
+	}
+
+	createdWorkout, err := w.repository.CreateWithoutRoutine(
+		ctx,
+		input.UserID,
+		workout,
+	)
+	if err != nil {
+		if errors.Is(err, repository.ErrWorkoutAlreadyOpen) {
+			return WorkoutSessionOutput{}, ErrWorkoutAlreadyOpen
+		}
+
+		return WorkoutSessionOutput{}, fmt.Errorf(
+			"create free workout session: %w",
+			err,
+		)
+	}
+
+	return WorkoutSessionOutput{
+		ID:         createdWorkout.ID,
+		RoutineID:  createdWorkout.RoutineID,
+		StartedAt:  createdWorkout.StartedAt,
+		FinishedAt: createdWorkout.FinishedAt,
+		Notes:      createdWorkout.Notes,
+		CreatedAt:  createdWorkout.CreatedAt,
+		Exercises:  []WorkoutExerciseRoutine{},
+	}, nil
+}
+
+func (w *WorkoutService) createWorkoutFromRoutine(
+	ctx context.Context,
+	input CreateWorkoutSessionInput,
+) (WorkoutSessionOutput, error) {
 	notes := strings.TrimSpace(input.Notes)
 
 	workout := domain.WorkoutSession{
@@ -48,7 +114,7 @@ func (w *WorkoutService) Create(
 		Notes:     notes,
 	}
 
-	createdWorkout, err := w.repository.Create(
+	createdWorkout, err := w.repository.CreateFromRoutine(
 		ctx,
 		input.UserID,
 		workout,
@@ -63,23 +129,37 @@ func (w *WorkoutService) Create(
 		}
 
 		return WorkoutSessionOutput{}, fmt.Errorf(
-			"create workout session: %w",
+			"create workout session from routine: %w",
 			err,
 		)
 	}
 
-	return workoutSessionToOutput(createdWorkout), nil
-}
+	exercises := make(
+		[]WorkoutExerciseRoutine,
+		len(createdWorkout.Exercises),
+	)
 
-func workoutSessionToOutput(
-	workout domain.WorkoutSession,
-) WorkoutSessionOutput {
-	return WorkoutSessionOutput{
-		ID:         workout.ID,
-		RoutineID:  workout.RoutineID,
-		StartedAt:  workout.StartedAt,
-		FinishedAt: workout.FinishedAt,
-		Notes:      workout.Notes,
-		CreatedAt:  workout.CreatedAt,
+	for i, exercise := range createdWorkout.Exercises {
+		exercises[i] = WorkoutExerciseRoutine{
+			ID:            exercise.ID,
+			ExerciseID:    exercise.ExerciseID,
+			Name:          exercise.Name,
+			MuscleGroup:   exercise.MuscleGroup,
+			Notes:         exercise.Notes,
+			Position:      exercise.Position,
+			TargetSets:    exercise.TargetSets,
+			TargetRepsMin: exercise.TargetRepsMin,
+			TargetRepsMax: exercise.TargetRepsMax,
+		}
 	}
+
+	return WorkoutSessionOutput{
+		ID:         createdWorkout.Workout.ID,
+		RoutineID:  createdWorkout.Workout.RoutineID,
+		StartedAt:  createdWorkout.Workout.StartedAt,
+		FinishedAt: createdWorkout.Workout.FinishedAt,
+		Notes:      createdWorkout.Workout.Notes,
+		CreatedAt:  createdWorkout.Workout.CreatedAt,
+		Exercises:  exercises,
+	}, nil
 }

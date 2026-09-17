@@ -18,14 +18,29 @@ func NewWorkoutHandler(service *service.WorkoutService) *WorkoutHandler {
 
 type createWorkoutRequest struct {
 	Notes     string `json:"notes"`
-	RoutineID int64  `json:"routine_id"`
+	RoutineID *int64 `json:"routine_id"`
+}
+
+type workoutExerciseResponse struct {
+	ID            int64  `json:"id"`
+	ExerciseID    int64  `json:"exercise_id"`
+	Name          string `json:"name"`
+	MuscleGroup   string `json:"muscle_group"`
+	Notes         string `json:"notes"`
+	Position      int32  `json:"position"`
+	TargetSets    int32  `json:"target_sets"`
+	TargetRepsMin int32  `json:"target_reps_min"`
+	TargetRepsMax int32  `json:"target_reps_max"`
 }
 
 type createWorkoutResponse struct {
-	ID        int64     `json:"id"`
-	RoutineID int64     `json:"routine_id"`
-	Notes     string    `json:"notes"`
-	CreatedAt time.Time `json:"created_at"`
+	ID         int64                     `json:"id"`
+	RoutineID  *int64                    `json:"routine_id"`
+	StartedAt  *time.Time                `json:"started_at"`
+	FinishedAt *time.Time                `json:"finished_at"`
+	Notes      string                    `json:"notes"`
+	CreatedAt  time.Time                 `json:"created_at"`
+	Exercises  []workoutExerciseResponse `json:"exercises"`
 }
 
 func (h *WorkoutHandler) Create(w http.ResponseWriter, r *http.Request) {
@@ -47,20 +62,45 @@ func (h *WorkoutHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	workoutS, err := h.service.Create(r.Context(), service.CreateWorkoutSessionInput{
-		UserID:    userID,
-		RoutineID: request.RoutineID,
-		Notes:     request.Notes,
-	})
+	workoutS, err := h.service.Create(
+		r.Context(),
+		service.CreateWorkoutSessionInput{
+			UserID:    userID,
+			RoutineID: request.RoutineID,
+			Notes:     request.Notes,
+		},
+	)
 	if err != nil {
 		writeServiceError(w, err)
 		return
 	}
 
+	exercises := make(
+		[]workoutExerciseResponse,
+		len(workoutS.Exercises),
+	)
+
+	for i, exercise := range workoutS.Exercises {
+		exercises[i] = workoutExerciseResponse{
+			ID:            exercise.ID,
+			ExerciseID:    exercise.ExerciseID,
+			Name:          exercise.Name,
+			MuscleGroup:   exercise.MuscleGroup,
+			Notes:         exercise.Notes,
+			Position:      exercise.Position,
+			TargetSets:    exercise.TargetSets,
+			TargetRepsMin: exercise.TargetRepsMin,
+			TargetRepsMax: exercise.TargetRepsMax,
+		}
+	}
+
 	writeJSON(w, http.StatusCreated, createWorkoutResponse{
-		ID:        workoutS.ID,
-		RoutineID: workoutS.RoutineID,
-		Notes:     workoutS.Notes,
-		CreatedAt: workoutS.CreatedAt,
+		ID:         workoutS.ID,
+		RoutineID:  workoutS.RoutineID,
+		StartedAt:  workoutS.StartedAt,
+		FinishedAt: workoutS.FinishedAt,
+		Notes:      workoutS.Notes,
+		CreatedAt:  workoutS.CreatedAt,
+		Exercises:  exercises,
 	})
 }
