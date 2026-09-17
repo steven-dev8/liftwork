@@ -9,17 +9,105 @@ import (
 	"context"
 )
 
-const createWorkoutSession = `-- name: CreateWorkoutSession :one
+const createWorkoutExercisesFromRoutine = `-- name: CreateWorkoutExercisesFromRoutine :many
+WITH inserted AS (
+    INSERT INTO workout_exercises (
+        workout_session_id,
+        exercise_id,
+        position
+    )
+    SELECT
+        $2,
+        re.exercise_id,
+        re.position
+    FROM routine_exercises re
+    WHERE re.routine_id = $1
+    ORDER BY re.position
+    RETURNING
+        id,
+        workout_session_id,
+        exercise_id,
+        position
+)
+SELECT
+    i.id,
+    i.exercise_id,
+    i.position,
+    e.name,
+    e.muscle_group,
+    e.notes,
+    re.target_sets,
+    re.target_reps_min,
+    re.target_reps_max
+FROM inserted i
+JOIN exercises e
+    ON e.id = i.exercise_id
+JOIN routine_exercises re
+    ON re.routine_id = $1
+    AND re.exercise_id = i.exercise_id
+ORDER BY i.position
+`
+
+type CreateWorkoutExercisesFromRoutineParams struct {
+	RoutineID        int64 `json:"routine_id"`
+	WorkoutSessionID int64 `json:"workout_session_id"`
+}
+
+type CreateWorkoutExercisesFromRoutineRow struct {
+	ID            int64  `json:"id"`
+	ExerciseID    int64  `json:"exercise_id"`
+	Position      int32  `json:"position"`
+	Name          string `json:"name"`
+	MuscleGroup   string `json:"muscle_group"`
+	Notes         string `json:"notes"`
+	TargetSets    int32  `json:"target_sets"`
+	TargetRepsMin int32  `json:"target_reps_min"`
+	TargetRepsMax int32  `json:"target_reps_max"`
+}
+
+func (q *Queries) CreateWorkoutExercisesFromRoutine(ctx context.Context, arg CreateWorkoutExercisesFromRoutineParams) ([]CreateWorkoutExercisesFromRoutineRow, error) {
+	rows, err := q.db.Query(ctx, createWorkoutExercisesFromRoutine, arg.RoutineID, arg.WorkoutSessionID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []CreateWorkoutExercisesFromRoutineRow{}
+	for rows.Next() {
+		var i CreateWorkoutExercisesFromRoutineRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.ExerciseID,
+			&i.Position,
+			&i.Name,
+			&i.MuscleGroup,
+			&i.Notes,
+			&i.TargetSets,
+			&i.TargetRepsMin,
+			&i.TargetRepsMax,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const createWorkoutSessionWithRoutine = `-- name: CreateWorkoutSessionWithRoutine :one
 INSERT INTO workout_sessions (
     user_id,
     routine_id,
     notes,
+    started_at,
     created_at
 )
 SELECT
     $1,
     r.id,
     $2,
+    now(),
     now()
 FROM routines r
 WHERE r.id = $3
@@ -27,14 +115,50 @@ WHERE r.id = $3
 RETURNING id, user_id, routine_id, started_at, finished_at, notes, created_at
 `
 
-type CreateWorkoutSessionParams struct {
+type CreateWorkoutSessionWithRoutineParams struct {
 	UserID    int64  `json:"user_id"`
 	Notes     string `json:"notes"`
 	RoutineID int64  `json:"routine_id"`
 }
 
-func (q *Queries) CreateWorkoutSession(ctx context.Context, arg CreateWorkoutSessionParams) (WorkoutSession, error) {
-	row := q.db.QueryRow(ctx, createWorkoutSession, arg.UserID, arg.Notes, arg.RoutineID)
+func (q *Queries) CreateWorkoutSessionWithRoutine(ctx context.Context, arg CreateWorkoutSessionWithRoutineParams) (WorkoutSession, error) {
+	row := q.db.QueryRow(ctx, createWorkoutSessionWithRoutine, arg.UserID, arg.Notes, arg.RoutineID)
+	var i WorkoutSession
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.RoutineID,
+		&i.StartedAt,
+		&i.FinishedAt,
+		&i.Notes,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const createWorkoutSessionWithoutRoutine = `-- name: CreateWorkoutSessionWithoutRoutine :one
+INSERT INTO workout_sessions (
+    user_id,
+    routine_id,
+    notes,
+    created_at
+)
+VALUES (
+    $1,
+    NULL,
+    $2,
+    now()
+)
+RETURNING id, user_id, routine_id, started_at, finished_at, notes, created_at
+`
+
+type CreateWorkoutSessionWithoutRoutineParams struct {
+	UserID int64  `json:"user_id"`
+	Notes  string `json:"notes"`
+}
+
+func (q *Queries) CreateWorkoutSessionWithoutRoutine(ctx context.Context, arg CreateWorkoutSessionWithoutRoutineParams) (WorkoutSession, error) {
+	row := q.db.QueryRow(ctx, createWorkoutSessionWithoutRoutine, arg.UserID, arg.Notes)
 	var i WorkoutSession
 	err := row.Scan(
 		&i.ID,

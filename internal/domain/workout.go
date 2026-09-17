@@ -5,7 +5,7 @@ import "time"
 // WorkoutSession is one execution of a training routine
 type WorkoutSession struct {
 	ID         int64
-	RoutineID  int64
+	RoutineID  *int64
 	StartedAt  *time.Time
 	FinishedAt *time.Time
 	Notes      string
